@@ -30,7 +30,7 @@
     <DefineConstants>VSTO40</DefineConstants>
     <IsWebBootstrapper>True</IsWebBootstrapper>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <PublishUrl>publish\</PublishUrl>
+    <PublishUrl Condition="'$(PublishUrl)' == ''">publish\</PublishUrl>
     <InstallUrl>http://billingtools.azurewebsites.net/excel/install/</InstallUrl>
     <TargetCulture>en</TargetCulture>
     <ApplicationVersion>1.0.0.8</ApplicationVersion>
@@ -39,7 +39,7 @@
     <UpdateInterval>7</UpdateInterval>
     <UpdateIntervalUnits>days</UpdateIntervalUnits>
     <ProductName>Azure Excel AddIn</ProductName>
-    <PublisherName />
+    <PublisherName Condition="'$(PublisherName)' == ''"  />
     <SupportUrl>http://billingtools.azurewebsites.net</SupportUrl>
     <FriendlyName>Azure Excel AddIn</FriendlyName>
     <OfficeApplicationDescription>A simple Excel add-in used in getting Azure consumption and usage reports.</OfficeApplicationDescription>
