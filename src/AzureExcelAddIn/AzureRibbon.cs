@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Office.Tools.Ribbon;
 using Newtonsoft.Json;
@@ -12,11 +8,22 @@ namespace ExcelAddIn1
 {
     public partial class AzureRibbon
     {
+        private const int DefaultChunkSize = 1000; // CSP allows specifying chunk size. Default is 1000. Max is 1000.
         private const int MaxContinuationLinks = 500;
 
         private readonly string[] HeaderCaptions = {
-            "Id", "Name", "Type", "subscription Id", "Usage Start Time (UTC)", "Usage End Time (UTC)", "Meter Id", "Meter Name",
+            "Usage Start Time (UTC)", "Usage End Time (UTC)", "Id", "Name", "Type", "subscription Id", "Meter Id", "Meter Name",
             "Meter Category", "Meter Sub-Category", "Quantity", "Unit", "Tags", "Info Fields (legacy format)", "Instance Data (new format)"
+        };
+        private readonly string[] HeaderCaptionsCsp = {
+            "Usage Start Time (UTC)", "Usage End Time (UTC)", "Meter Id", "Meter Name", "Meter Category", "Meter Sub-Category", "Meter Region",
+            "Quantity", "Unit", "Tags", "Info Fields (legacy format)", "Instance Data (new format), Attributes"
+        };
+        private readonly string[] HeaderCaptionsEa = {
+            "Usage Time (UTC)", "Account Id", "Account Name", "Product Id", "Product", "Resource Location Id", "Resource Location", "Consumed Service Id", "Consumed Service", "Department Id", "Department Name",
+            "Account Owner Email", "Service Administrator Id", "Subscription Id", "Subscription Guid", "Subscription Name", "Tags",
+            "Meter Id", "Meter Name", "Meter Category", "Meter Sub-Category", "Meter Region", "Consumed Quantity", "Unit of Measure", "Resource Rate", "Cost",
+            "Instance Id", "Service Info 1", "Service Info 2", "Additional Info", "Store Service Identifier", "Cost Center", "Resource Group"
         };
 
         private void AzureRibbonTab_Load(object sender, RibbonUIEventArgs e)
@@ -25,6 +32,8 @@ namespace ExcelAddIn1
             var yesterday = today.AddDays(-1);
             this.StartDateEditBox.Text = $"{yesterday.Year}-{yesterday.Month:0#}-{yesterday.Day:0#}";
             this.EndDateEditBox.Text = $"{today.Year}-{today.Month:0#}-{today.Day:0#}";
+
+            this.HydrateFromPersistedData();
         }
 
         private void GetTokenButton_Click(object sender, RibbonControlEventArgs e)
@@ -38,7 +47,7 @@ namespace ExcelAddIn1
 
             try
             {
-                string token = AuthUtils.GetAuthorizationHeaderAsync(tenantId, true);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, true);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -56,18 +65,18 @@ namespace ExcelAddIn1
 
         private async void GetUsageReportButton_Click(object sender, RibbonControlEventArgs e)
         {
-            if (!this.ValidateUsageReportInput())
+            if (!this.ValidateUsageReportInput(UsageApi.Standard))
             {
                 return;
             }
 
-            var tenantId = this.TenantIdEditBox.Text;
+            var tenantId = this.TenantIdComboBox.Text;
 
             try
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeaderAsync(tenantId, this.ForceReAuthCheckBox.Checked);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -77,9 +86,9 @@ namespace ExcelAddIn1
                     return;
                 }
 
-                Globals.ThisAddIn.Application.StatusBar = "Getting usage report...";
+                Globals.ThisAddIn.Application.StatusBar = "Getting usage report (standard)...";
 
-                var subscriptionId = this.SubscriptionIdEditBox.Text;
+                var subscriptionId = this.SubscriptionIdComboBox.Text;
                 var reportStartDate = this.StartDateEditBox.Text;
                 var reportEndDate = this.EndDateEditBox.Text;
                 var aggregationGranularity = (string)this.AggregationGranularityDropDown.SelectedItem.Tag;
@@ -91,7 +100,7 @@ namespace ExcelAddIn1
                 int rowNumber = headerRowNumber + 2;
                 Excel.Worksheet currentActiveWorksheet = null;
                 int currentContinuationCount = 0;
-                UsageAggregates usageAggregates = await BillingUtils.GetUsageAggregates(token, subscriptionId, reportStartDate, reportEndDate, aggregationGranularity, showDetails);
+                UsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesStandard(token, subscriptionId, reportStartDate, reportEndDate, aggregationGranularity, showDetails);
 
                 do
                 {
@@ -108,7 +117,7 @@ namespace ExcelAddIn1
                         // Add a fresh worksheet.
                         Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
                         currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
-                        this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet);
+                        this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.Standard);
                     }
 
                     this.PrintUsageAggregatesReport(startColumnNumber, rowNumber, usageAggregates, currentContinuationCount, currentActiveWorksheet);
@@ -121,15 +130,16 @@ namespace ExcelAddIn1
                         break;
                     }
 
-                    usageAggregates = await BillingUtils.GetUsageAggregates(token, continuationLink);
+                    string content = await BillingUtils.GetUsageAggregates(token, continuationLink);
+                    usageAggregates = JsonConvert.DeserializeObject<UsageAggregates>(content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
-                currentActiveWorksheet.get_Range($"M11:M{rowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC // Tags
+                this.FormatTags(UsageApi.Standard, rowNumber, currentActiveWorksheet);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n{ex.StackTrace}\r\n",
+                MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
                     "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -138,15 +148,171 @@ namespace ExcelAddIn1
             }
         }
 
-        private bool ValidateUsageReportInput()
+        private async void GetCspUsageReportButton_Click(object sender, RibbonControlEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(this.TenantIdEditBox.Text))
+            if (!this.ValidateUsageReportInput(UsageApi.CloudSolutionProvider))
+            {
+                return;
+            }
+
+            var tenantId = this.TenantIdComboBox.Text;
+
+            try
+            {
+                Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
+
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked);
+
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    MessageBox.Show(
+                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials, the correct Tenant Id and Subscription Id, and make sure 'Force Re-Authentication' is checked and try again.",
+                        "Get Usage Report (CSP)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                Globals.ThisAddIn.Application.StatusBar = "Getting usage report (CSP)...";
+
+                var subscriptionId = this.SubscriptionIdComboBox.Text;
+                var reportStartDate = this.StartDateEditBox.Text;
+                var reportEndDate = this.EndDateEditBox.Text;
+                var aggregationGranularity = (string)this.AggregationGranularityDropDown.SelectedItem.Tag;
+                var showDetails = "true"; // this.ShowDetailsCheckBox.Checked.ToString();
+
+                // Write the report line items:
+                int startColumnNumber = 1; // A
+                int headerRowNumber = 9;
+                int rowNumber = headerRowNumber + 2;
+                Excel.Worksheet currentActiveWorksheet = null;
+                int currentContinuationCount = 0;
+                int chunkSize = DefaultChunkSize;
+                CspUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesCsp(token, subscriptionId, tenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize);
+
+                do
+                {
+                    if (usageAggregates == null)
+                    {
+                        MessageBox.Show(
+                            $"ERROR: Failed to get usage report. Verify the correct parameters were provided for Subscription Id, Start Date, and End Date and try again.",
+                            "Get Usage Report (CSP)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    if (currentContinuationCount == 0)
+                    {
+                        // Add a fresh worksheet.
+                        Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
+                        currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
+                        this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.CloudSolutionProvider);
+                    }
+
+                    this.PrintUsageAggregatesReportCsp(startColumnNumber, rowNumber, usageAggregates, currentContinuationCount, currentActiveWorksheet);
+                    rowNumber += usageAggregates.items.Length;
+
+                    // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
+                    string continuationLink = usageAggregates.links?.self?.uri;
+                    if (string.IsNullOrWhiteSpace(continuationLink))
+                    {
+                        break;
+                    }
+
+                    string content = await BillingUtils.GetUsageAggregates(token, continuationLink);
+                    usageAggregates = JsonConvert.DeserializeObject<CspUsageAggregates>(content);
+                    currentContinuationCount++;
+                } while (currentContinuationCount < MaxContinuationLinks);
+
+                this.FormatTags(UsageApi.CloudSolutionProvider, rowNumber, currentActiveWorksheet);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
+                    "Get Usage Report (CSP)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Globals.ThisAddIn.Application.StatusBar = "Ready";
+            }
+        }
+
+        private async void GetEaUsageReportButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            if (!this.ValidateUsageReportInput(UsageApi.EnterpriseAgreement))
+            {
+                return;
+            }
+
+            try
+            {
+                Globals.ThisAddIn.Application.StatusBar = "Getting usage report (standard)...";
+
+                var enrollmentNumber = this.EnrollmentNumberComboBox.Text;
+                var apiKey = this.EaApiKeyComboBox.Text;
+                var reportStartDate = this.StartDateEditBox.Text;
+                var reportEndDate = this.EndDateEditBox.Text;
+
+                // Write the report line items:
+                int startColumnNumber = 1; // A
+                int headerRowNumber = 10;
+                int rowNumber = headerRowNumber + 2;
+                Excel.Worksheet currentActiveWorksheet = null;
+                int currentContinuationCount = 0;
+                EaUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesEa(apiKey, enrollmentNumber, reportStartDate, reportEndDate);
+
+                do
+                {
+                    if (usageAggregates == null)
+                    {
+                        MessageBox.Show(
+                            $"ERROR: Failed to get usage report. Verify the correct parameters were provided for Enrollment Number, API Key, Start Date, and End Date and try again.",
+                            "Get Usage Report (EA)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    if (currentContinuationCount == 0)
+                    {
+                        // Add a fresh worksheet.
+                        Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
+                        currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
+                        this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.EnterpriseAgreement);
+                    }
+
+                    this.PrintUsageAggregatesReportEa(startColumnNumber, rowNumber, usageAggregates, currentContinuationCount, currentActiveWorksheet);
+                    rowNumber += usageAggregates.data.Length;
+
+                    // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
+                    string continuationLink = usageAggregates.nextLink;
+                    if (string.IsNullOrWhiteSpace(continuationLink))
+                    {
+                        break;
+                    }
+
+                    string content = await BillingUtils.GetUsageAggregates(apiKey, continuationLink);
+                    usageAggregates = JsonConvert.DeserializeObject<EaUsageAggregates>(content);
+                    currentContinuationCount++;
+                } while (currentContinuationCount < MaxContinuationLinks);
+
+                this.FormatTags(UsageApi.EnterpriseAgreement, rowNumber, currentActiveWorksheet);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
+                    "Get Usage Report (EA)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Globals.ThisAddIn.Application.StatusBar = "Ready";
+            }
+        }
+
+        private bool ValidateUsageReportInput(UsageApi usageApi)
+        {
+            if (string.IsNullOrWhiteSpace(this.TenantIdComboBox.Text))
             {
                 MessageBox.Show($"ERROR: Tenant Id must be specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(this.SubscriptionIdEditBox.Text))
+            if (string.IsNullOrWhiteSpace(this.SubscriptionIdComboBox.Text))
             {
                 MessageBox.Show($"ERROR: Subscription Id must be specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
@@ -164,98 +330,163 @@ namespace ExcelAddIn1
                 return false;
             }
 
+            if (usageApi == UsageApi.EnterpriseAgreement)
+            {
+                if (string.IsNullOrWhiteSpace(this.EnrollmentNumberComboBox.Text))
+                {
+                    MessageBox.Show($"ERROR: Enrollment Number must be specified for an EA Usage Report.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+            }
+
+            SecurityUtils.SaveUsageReportParameters(new PersistedData()
+            {
+                SubscriptionId = this.SubscriptionIdComboBox.Text.Trim(),
+                TenantId = this.TenantIdComboBox.Text.Trim(),
+                EnrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim(),
+                EaApiKey = this.EaApiKeyComboBox.Text.Trim()
+            });
+
             return true;
         }
 
-        private void PrintUsageAggregatesHeader(int startColumnNumber, int headerRowNumber, Excel.Worksheet currentActiveWorksheet)
+        private void FormatTags(UsageApi usageApi, int lastRowNumber, Excel.Worksheet currentActiveWorksheet)
+        {
+            switch (usageApi)
+            {
+                case UsageApi.CloudSolutionProvider:
+                    currentActiveWorksheet.get_Range($"J11:J{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
+                    break;
+                case UsageApi.EnterpriseAgreement:
+                    currentActiveWorksheet.get_Range($"Q12:Q{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
+                    break;
+                default:
+                    currentActiveWorksheet.get_Range($"M11:M{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
+                    break;
+            }
+        }
+
+        private void PrintUsageAggregatesHeader(int startColumnNumber, int headerRowNumber, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
         {
             Globals.ThisAddIn.Application.StatusBar = "Displaying usage report header...";
 
-            var tenantId = this.TenantIdEditBox.Text;
-            var subscriptionId = this.SubscriptionIdEditBox.Text;
+            var tenantId = this.TenantIdComboBox.Text;
+            var subscriptionId = this.SubscriptionIdComboBox.Text;
             var reportStartDate = this.StartDateEditBox.Text;
             var reportEndDate = this.EndDateEditBox.Text;
             var aggregationGranularity = this.AggregationGranularityDropDown.SelectedItem.Tag;
-
+            var tableFirstRowNumber = "11";
 
             // Write the report header:
-            this.WriteHeaderRow("A1", "B1", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
-            this.WriteHeaderRow("A2", "B2", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
-            this.WriteHeaderRow("A3", "B3", new[] { "Report Start Date (UTC):", $"{reportStartDate}" }, currentActiveWorksheet);
-            this.WriteHeaderRow("A4", "B4", new[] { "Report End Date (UTC):", $"{reportEndDate}" }, currentActiveWorksheet);
-            this.WriteHeaderRow("A5", "B5", new[] { "Aggregation Granularity:", $"{aggregationGranularity}" }, currentActiveWorksheet);
-            this.WriteHeaderRow("A6", "B6", new[] { "Report generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A1", "B1", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A2", "B2", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A3", "B3", new[] { "Report Start Date (UTC):", $"{reportStartDate}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A4", "B4", new[] { "Report End Date (UTC):", $"{reportEndDate}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A5", "B5", new[] { "Aggregation Granularity:", $"{aggregationGranularity}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A6", "B6", new[] { "Report generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
+            if (usageApi == UsageApi.EnterpriseAgreement)
+            {
+                ExcelUtils.WriteHeaderRow("A7", "B7", new[] { "Enrollment Number:", $"{tenantId}" }, currentActiveWorksheet);
+                tableFirstRowNumber = "12";
+            }
 
-
-            this.WriteUsageLineItemHeader(startColumnNumber, headerRowNumber, this.HeaderCaptions, currentActiveWorksheet);
+            ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, headerRowNumber, this.GetHeaderCaptions(usageApi), currentActiveWorksheet);
 
             // Format the data types of datatime and numeric columns.
-            currentActiveWorksheet.get_Range("E11").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageStartTime
-            currentActiveWorksheet.get_Range("F11").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageEndTime
+            currentActiveWorksheet.get_Range($"A{tableFirstRowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageStartTime
+            if (usageApi == UsageApi.Standard || usageApi == UsageApi.CloudSolutionProvider)
+            {
+                currentActiveWorksheet.get_Range($"B{tableFirstRowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageEndTime
+            }
+
             //currentActiveWorksheet.get_Range("K11").EntireColumn.NumberFormat = "#####.###################"; // Quantity
+        }
+
+        private string[] GetHeaderCaptions(UsageApi usageApi)
+        {
+            switch (usageApi)
+            {
+                case UsageApi.CloudSolutionProvider:
+                    return this.HeaderCaptionsCsp;
+                case UsageApi.EnterpriseAgreement:
+                    return this.HeaderCaptionsEa;
+                default:
+                    return this.HeaderCaptions;
+            }
         }
 
         private void PrintUsageAggregatesReport(int startColumnNumber, int rowNumber, UsageAggregates usageAggregates, int chunkNumber, Excel.Worksheet currentActiveWorksheet)
         {
-            Globals.ThisAddIn.Application.StatusBar = $"Displaying usage report chunk {chunkNumber}...";
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying standard usage report chunk {chunkNumber}...";
 
             foreach (var usageAggregate in usageAggregates.value)
             {
-                this.WriteUsageLineItem(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptions.Length, currentActiveWorksheet);
+                ExcelUtils.WriteUsageLineItem(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptions.Length, currentActiveWorksheet);
                 rowNumber++;
             }
         }
 
-        private void WriteHeaderRow(string nameCell, string valueCell, string[] content, Excel.Worksheet activeWorksheet)
+        private void PrintUsageAggregatesReportCsp(int startColumnNumber, int rowNumber, CspUsageAggregates usageAggregates, int chunkNumber, Excel.Worksheet currentActiveWorksheet)
         {
-            Excel.Range currentRow = activeWorksheet.get_Range(nameCell);
-            currentRow.EntireRow.Insert(Excel.XlInsertShiftDirection.xlShiftDown);
-            Excel.Range newCurrentRow = activeWorksheet.get_Range(nameCell, valueCell);
-            newCurrentRow.Value2 = content;
-            newCurrentRow.Interior.ColorIndex = 36; // #FFFF99
-            newCurrentRow.ColumnWidth = 35;
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying CSP usage report chunk {chunkNumber}...";
+
+            foreach (var usageAggregate in usageAggregates.items)
+            {
+                ExcelUtils.WriteUsageLineItemCsp(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptions.Length, currentActiveWorksheet);
+                rowNumber++;
+            }
         }
 
-        private void WriteUsageLineItemHeader(int startColumnNumber, int rowNumber, string[] headerCaptions, Excel.Worksheet activeWorksheet)
+        private void PrintUsageAggregatesReportEa(int startColumnNumber, int rowNumber, EaUsageAggregates usageAggregates, int chunkNumber, Excel.Worksheet currentActiveWorksheet)
         {
-            Excel.Range c1 = (Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber];
-            Excel.Range c2 = (Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber + headerCaptions.Length - 1];
-            Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
-            currentRow.EntireRow.Insert(Excel.XlInsertShiftDirection.xlShiftDown);
-            Excel.Range newCurrentRow = activeWorksheet.get_Range(c1, c2);
-            newCurrentRow.Value2 = headerCaptions;
-            newCurrentRow.Interior.ColorIndex = 15; // #C0C0C0
-            newCurrentRow.ColumnWidth = 35;
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying EA usage report chunk {chunkNumber}...";
+
+            foreach (var usageAggregate in usageAggregates.data)
+            {
+                ExcelUtils.WriteUsageLineItemEa(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptions.Length, currentActiveWorksheet);
+                rowNumber++;
+            }
         }
 
-        private void WriteUsageLineItem(int startColumnNumber, int rowNumber, Value lineItem, int numberOfColumns, Excel.Worksheet activeWorksheet)
+        private void HydrateFromPersistedData()
         {
-            Excel.Range c1 = (Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber];
-            Excel.Range c2 = (Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber + numberOfColumns - 1];
-            Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
-            currentRow.Value2 = this.GetLineItemFields(lineItem);
-        }
+            var persistedData = SecurityUtils.GetSavedUsageReportParameters();
+            if (persistedData != null)
+            {
+                var ribbonFactory = Globals.Factory.GetRibbonFactory();
+                if (!string.IsNullOrWhiteSpace(persistedData.SubscriptionId))
+                {
+                    this.SubscriptionIdComboBox.Text = persistedData.SubscriptionId;
+                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+                    ribbonDropDownItem.Label = persistedData.SubscriptionId;
+                    this.SubscriptionIdComboBox.Items.Add(ribbonDropDownItem);
+                }
 
-        private object[] GetLineItemFields(Value lineItem)
-        {
-            List<object> fields = new List<object>();
-            fields.Add(lineItem.id);
-            fields.Add(lineItem.name);
-            fields.Add(lineItem.type);
-            fields.Add(lineItem.properties.subscriptionId);
-            fields.Add(lineItem.properties.usageStartTime);
-            fields.Add(lineItem.properties.usageEndTime);
-            fields.Add(lineItem.properties.meterId);
-            fields.Add(lineItem.properties.meterName);
-            fields.Add(lineItem.properties.meterCategory);
-            fields.Add(lineItem.properties.meterSubCategory);
-            fields.Add(lineItem.properties.quantity);
-            fields.Add(lineItem.properties.unit);
-            fields.Add(JsonUtils.ExtractTagsFromInstanceData(lineItem.properties.instanceData));
-            fields.Add(JsonUtils.ExtractInfoFields(lineItem.properties.infoFields));
-            fields.Add(lineItem.properties.instanceData);
+                if (!string.IsNullOrWhiteSpace(persistedData.TenantId))
+                {
+                    this.TenantIdComboBox.Text = persistedData.TenantId;
+                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+                    ribbonDropDownItem.Label = persistedData.TenantId;
+                    this.TenantIdComboBox.Items.Add(ribbonDropDownItem);
+                }
 
-            return fields.ToArray();
+                if (!string.IsNullOrWhiteSpace(persistedData.EnrollmentNumber))
+                {
+                    this.EnrollmentNumberComboBox.Text = persistedData.EnrollmentNumber;
+                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+                    ribbonDropDownItem.Label = persistedData.EnrollmentNumber;
+                    this.EnrollmentNumberComboBox.Items.Add(ribbonDropDownItem);
+                }
+
+                if (!string.IsNullOrWhiteSpace(persistedData.EaApiKey))
+                {
+                    this.EaApiKeyComboBox.Text = persistedData.EaApiKey;
+                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+                    ribbonDropDownItem.Label = persistedData.EaApiKey;
+                    this.EaApiKeyComboBox.Items.Add(ribbonDropDownItem);
+                }
+                this.EaApiKeyComboBox.Text = persistedData.EaApiKey ?? string.Empty;
+            }
         }
     }
 }

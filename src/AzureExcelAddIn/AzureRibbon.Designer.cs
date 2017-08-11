@@ -34,21 +34,25 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AzureRibbon));
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl1 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl2 = this.Factory.CreateRibbonDropDownItem();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AzureRibbon));
             this.AzureRibbonTab = this.Factory.CreateRibbonTab();
             this.AuthenticationRibbonGroup = this.Factory.CreateRibbonGroup();
             this.AuthTenantIdEditBox = this.Factory.CreateRibbonEditBox();
             this.GetTokenButton = this.Factory.CreateRibbonButton();
             this.BillingAPIsRibbonGroup = this.Factory.CreateRibbonGroup();
-            this.SubscriptionIdEditBox = this.Factory.CreateRibbonEditBox();
-            this.TenantIdEditBox = this.Factory.CreateRibbonEditBox();
+            this.SubscriptionIdComboBox = this.Factory.CreateRibbonComboBox();
+            this.TenantIdComboBox = this.Factory.CreateRibbonComboBox();
             this.AggregationGranularityDropDown = this.Factory.CreateRibbonDropDown();
             this.StartDateEditBox = this.Factory.CreateRibbonEditBox();
             this.EndDateEditBox = this.Factory.CreateRibbonEditBox();
-            this.ForceReAuthCheckBox = this.Factory.CreateRibbonCheckBox();
             this.GetUsageReportButton = this.Factory.CreateRibbonButton();
+            this.GetCspUsageReportButton = this.Factory.CreateRibbonButton();
+            this.GetEaUsageReportButton = this.Factory.CreateRibbonButton();
+            this.ForceReAuthCheckBox = this.Factory.CreateRibbonCheckBox();
+            this.EaApiKeyComboBox = this.Factory.CreateRibbonComboBox();
+            this.EnrollmentNumberComboBox = this.Factory.CreateRibbonComboBox();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
@@ -72,11 +76,14 @@
             // 
             this.AuthTenantIdEditBox.Label = "Tenant Id";
             this.AuthTenantIdEditBox.Name = "AuthTenantIdEditBox";
+            this.AuthTenantIdEditBox.ScreenTip = "Tenant Id";
+            this.AuthTenantIdEditBox.SuperTip = "The user\'s tenant id (standard and CSP) or the customer tenant id (EA), in the fo" +
+    "rm xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.";
             this.AuthTenantIdEditBox.Text = null;
             // 
             // GetTokenButton
             // 
-            this.GetTokenButton.Image = ((System.Drawing.Image)(resources.GetObject("GetTokenButton.Image")));
+            this.GetTokenButton.Image = global::ExcelAddIn1.Properties.Resources.Azure_Acitve_Directory_Access_Control;
             this.GetTokenButton.Label = "Get Authentication Token";
             this.GetTokenButton.Name = "GetTokenButton";
             this.GetTokenButton.ShowImage = true;
@@ -84,29 +91,37 @@
             // 
             // BillingAPIsRibbonGroup
             // 
-            this.BillingAPIsRibbonGroup.Items.Add(this.SubscriptionIdEditBox);
-            this.BillingAPIsRibbonGroup.Items.Add(this.TenantIdEditBox);
-            this.BillingAPIsRibbonGroup.Items.Add(this.AggregationGranularityDropDown);
+            this.BillingAPIsRibbonGroup.Items.Add(this.SubscriptionIdComboBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.TenantIdComboBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.ForceReAuthCheckBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.StartDateEditBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.EndDateEditBox);
-            this.BillingAPIsRibbonGroup.Items.Add(this.ForceReAuthCheckBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.AggregationGranularityDropDown);
             this.BillingAPIsRibbonGroup.Items.Add(this.GetUsageReportButton);
-            this.BillingAPIsRibbonGroup.Label = "Consumption APIs";
+            this.BillingAPIsRibbonGroup.Items.Add(this.GetCspUsageReportButton);
+            this.BillingAPIsRibbonGroup.Items.Add(this.GetEaUsageReportButton);
+            this.BillingAPIsRibbonGroup.Items.Add(this.EnrollmentNumberComboBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.EaApiKeyComboBox);
+            this.BillingAPIsRibbonGroup.Label = "Azure Usage APIs";
             this.BillingAPIsRibbonGroup.Name = "BillingAPIsRibbonGroup";
             // 
-            // SubscriptionIdEditBox
+            // SubscriptionIdComboBox
             // 
-            this.SubscriptionIdEditBox.Label = "Subscription Id";
-            this.SubscriptionIdEditBox.Name = "SubscriptionIdEditBox";
-            this.SubscriptionIdEditBox.SuperTip = "Subscription id for which to get aggregate usage, in the form xxxxxxxx-xxxx-xxxx-" +
+            this.SubscriptionIdComboBox.Label = "Subscription Id";
+            this.SubscriptionIdComboBox.Name = "SubscriptionIdComboBox";
+            this.SubscriptionIdComboBox.ScreenTip = "Subscription Id";
+            this.SubscriptionIdComboBox.SuperTip = "Subscription id for which to get aggregate usage, in the form xxxxxxxx-xxxx-xxxx-" +
     "xxxx-xxxxxxxxxxxx.";
-            this.SubscriptionIdEditBox.Text = null;
+            this.SubscriptionIdComboBox.Text = null;
             // 
-            // TenantIdEditBox
+            // TenantIdComboBox
             // 
-            this.TenantIdEditBox.Label = "Tenant Id";
-            this.TenantIdEditBox.Name = "TenantIdEditBox";
-            this.TenantIdEditBox.Text = null;
+            this.TenantIdComboBox.Label = "Tenant Id";
+            this.TenantIdComboBox.Name = "TenantIdComboBox";
+            this.TenantIdComboBox.ScreenTip = "Tenant Id";
+            this.TenantIdComboBox.SuperTip = "The user\'s tenant id (standard and CSP) or the customer tenant id (EA), in the fo" +
+    "rm xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.";
+            this.TenantIdComboBox.Text = null;
             // 
             // AggregationGranularityDropDown
             // 
@@ -118,36 +133,82 @@
             this.AggregationGranularityDropDown.Items.Add(ribbonDropDownItemImpl2);
             this.AggregationGranularityDropDown.Label = "Aggregation Granularity";
             this.AggregationGranularityDropDown.Name = "AggregationGranularityDropDown";
+            this.AggregationGranularityDropDown.ScreenTip = "Aggregation Granularity";
+            this.AggregationGranularityDropDown.SuperTip = "Data granularity (Daily or Hourly). The default is Daily.";
             // 
             // StartDateEditBox
             // 
             this.StartDateEditBox.Label = "Report Start Date";
             this.StartDateEditBox.Name = "StartDateEditBox";
-            this.StartDateEditBox.SuperTip = "Report Start Date (yyyy-mm-dd)";
+            this.StartDateEditBox.ScreenTip = "Report Start Date";
+            this.StartDateEditBox.SuperTip = "Report Start Date (yyyy-mm-dd). It can include a time portion for standard and CS" +
+    "P accounts.";
             this.StartDateEditBox.Text = null;
             // 
             // EndDateEditBox
             // 
             this.EndDateEditBox.Label = "Report End Date";
             this.EndDateEditBox.Name = "EndDateEditBox";
-            this.EndDateEditBox.SuperTip = "Report End Date (yyyy-mm-dd)";
+            this.EndDateEditBox.ScreenTip = "Report End Date";
+            this.EndDateEditBox.SuperTip = "Report End Date (yyyy-mm-dd).  It can include a time portion for standard and CSP" +
+    " accounts.";
             this.EndDateEditBox.Text = null;
+            // 
+            // GetUsageReportButton
+            // 
+            this.GetUsageReportButton.Image = global::ExcelAddIn1.Properties.Resources.BillingHub;
+            this.GetUsageReportButton.Label = "Get Usage Report (Standard)";
+            this.GetUsageReportButton.Name = "GetUsageReportButton";
+            this.GetUsageReportButton.ScreenTip = "Get Usage Report (Standard)";
+            this.GetUsageReportButton.ShowImage = true;
+            this.GetUsageReportButton.SuperTip = resources.GetString("GetUsageReportButton.SuperTip");
+            this.GetUsageReportButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GetUsageReportButton_Click);
+            // 
+            // GetCspUsageReportButton
+            // 
+            this.GetCspUsageReportButton.Image = global::ExcelAddIn1.Properties.Resources.BillingHub;
+            this.GetCspUsageReportButton.Label = "Get Usage Report (CSP)";
+            this.GetCspUsageReportButton.Name = "GetCspUsageReportButton";
+            this.GetCspUsageReportButton.ScreenTip = "Get Usage Report (CSP)";
+            this.GetCspUsageReportButton.ShowImage = true;
+            this.GetCspUsageReportButton.SuperTip = resources.GetString("GetCspUsageReportButton.SuperTip");
+            this.GetCspUsageReportButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GetCspUsageReportButton_Click);
+            // 
+            // GetEaUsageReportButton
+            // 
+            this.GetEaUsageReportButton.Image = global::ExcelAddIn1.Properties.Resources.BillingHub;
+            this.GetEaUsageReportButton.Label = "Get Usage Report (EA)";
+            this.GetEaUsageReportButton.Name = "GetEaUsageReportButton";
+            this.GetEaUsageReportButton.ScreenTip = "Get Usage Report (EA)";
+            this.GetEaUsageReportButton.ShowImage = true;
+            this.GetEaUsageReportButton.SuperTip = "Enter a tenant id, an enrollment id, a report start date (yyyy-mm-dd), and a repo" +
+    "rt end date before clicking on this button. Check the Force Re-authnetication to" +
+    " always get a fresh token.";
+            this.GetEaUsageReportButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GetEaUsageReportButton_Click);
             // 
             // ForceReAuthCheckBox
             // 
             this.ForceReAuthCheckBox.Checked = true;
             this.ForceReAuthCheckBox.Label = "Force Re-Authentication";
             this.ForceReAuthCheckBox.Name = "ForceReAuthCheckBox";
+            this.ForceReAuthCheckBox.ScreenTip = "Force Re-Authentication";
+            this.ForceReAuthCheckBox.SuperTip = "Uncheck to use cached credentials. Keep checked to always gets fresh credentials." +
+    "";
             // 
-            // GetUsageReportButton
+            // EaApiKeyComboBox
             // 
-            this.GetUsageReportButton.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
-            this.GetUsageReportButton.Image = ((System.Drawing.Image)(resources.GetObject("GetUsageReportButton.Image")));
-            this.GetUsageReportButton.Label = "Get Usage Report";
-            this.GetUsageReportButton.Name = "GetUsageReportButton";
-            this.GetUsageReportButton.ShowImage = true;
-            this.GetUsageReportButton.SuperTip = resources.GetString("GetUsageReportButton.SuperTip");
-            this.GetUsageReportButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GetUsageReportButton_Click);
+            this.EaApiKeyComboBox.Label = "EA API Key";
+            this.EaApiKeyComboBox.Name = "EaApiKeyComboBox";
+            this.EaApiKeyComboBox.ScreenTip = "EA API Key";
+            this.EaApiKeyComboBox.SuperTip = "An EA API Key (generated in the EA portal, http://ea.azure.com) is required for g" +
+    "etting an EA Usage Report.";
+            // 
+            // EnrollmentNumberComboBox
+            // 
+            this.EnrollmentNumberComboBox.Label = "EA Enrollment Number";
+            this.EnrollmentNumberComboBox.Name = "EnrollmentNumberComboBox";
+            this.EnrollmentNumberComboBox.ScreenTip = "EA Enrollment Number";
+            this.EnrollmentNumberComboBox.SuperTip = "The Enrollment Number for the EA for which usage data is to be collected.";
             // 
             // AzureRibbon
             // 
@@ -169,15 +230,19 @@
         private Microsoft.Office.Tools.Ribbon.RibbonTab AzureRibbonTab;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup BillingAPIsRibbonGroup;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GetUsageReportButton;
-        internal Microsoft.Office.Tools.Ribbon.RibbonEditBox SubscriptionIdEditBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox StartDateEditBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox EndDateEditBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown AggregationGranularityDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox ForceReAuthCheckBox;
-        internal Microsoft.Office.Tools.Ribbon.RibbonEditBox TenantIdEditBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup AuthenticationRibbonGroup;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox AuthTenantIdEditBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GetTokenButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox SubscriptionIdComboBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox TenantIdComboBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton GetCspUsageReportButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton GetEaUsageReportButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox EaApiKeyComboBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox EnrollmentNumberComboBox;
     }
 
     partial class ThisRibbonCollection
