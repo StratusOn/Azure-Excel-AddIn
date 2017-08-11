@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows.Forms;
 using Microsoft.Office.Tools.Ribbon;
 using Newtonsoft.Json;
@@ -10,6 +11,7 @@ namespace ExcelAddIn1
     {
         private const int DefaultChunkSize = 1000; // CSP allows specifying chunk size. Default is 1000. Max is 1000.
         private const int MaxContinuationLinks = 500;
+        private const string AddinInstallUrl = "http://billingtools.azurewebsites.net/excel/install/setup.exe";
 
         private readonly string[] HeaderCaptions = {
             "Usage Start Time (UTC)", "Usage End Time (UTC)", "Id", "Name", "Type", "subscription Id", "Meter Id", "Meter Name",
@@ -47,7 +49,10 @@ namespace ExcelAddIn1
 
             try
             {
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, true);
+                UsageApi usageApi = this.TenantTypeDropDown.SelectedItemIndex == 1
+                    ? UsageApi.CloudSolutionProvider
+                    : UsageApi.Standard;
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, usageApi);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -76,7 +81,7 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -161,7 +166,7 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.CloudSolutionProvider);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -487,6 +492,11 @@ namespace ExcelAddIn1
                 }
                 this.EaApiKeyComboBox.Text = persistedData.EaApiKey ?? string.Empty;
             }
+        }
+
+        private void UpdateAddinButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            Process.Start(AddinInstallUrl);
         }
     }
 }

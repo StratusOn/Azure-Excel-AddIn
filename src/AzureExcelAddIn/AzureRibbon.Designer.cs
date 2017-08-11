@@ -34,9 +34,11 @@
         /// </summary>
         private void InitializeComponent()
         {
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl3 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl4 = this.Factory.CreateRibbonDropDownItem();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AzureRibbon));
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl1 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl2 = this.Factory.CreateRibbonDropDownItem();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AzureRibbon));
             this.AzureRibbonTab = this.Factory.CreateRibbonTab();
             this.AuthenticationRibbonGroup = this.Factory.CreateRibbonGroup();
             this.AuthTenantIdEditBox = this.Factory.CreateRibbonEditBox();
@@ -44,30 +46,36 @@
             this.BillingAPIsRibbonGroup = this.Factory.CreateRibbonGroup();
             this.SubscriptionIdComboBox = this.Factory.CreateRibbonComboBox();
             this.TenantIdComboBox = this.Factory.CreateRibbonComboBox();
-            this.AggregationGranularityDropDown = this.Factory.CreateRibbonDropDown();
+            this.ForceReAuthCheckBox = this.Factory.CreateRibbonCheckBox();
             this.StartDateEditBox = this.Factory.CreateRibbonEditBox();
             this.EndDateEditBox = this.Factory.CreateRibbonEditBox();
+            this.AggregationGranularityDropDown = this.Factory.CreateRibbonDropDown();
             this.GetUsageReportButton = this.Factory.CreateRibbonButton();
             this.GetCspUsageReportButton = this.Factory.CreateRibbonButton();
             this.GetEaUsageReportButton = this.Factory.CreateRibbonButton();
-            this.ForceReAuthCheckBox = this.Factory.CreateRibbonCheckBox();
-            this.EaApiKeyComboBox = this.Factory.CreateRibbonComboBox();
             this.EnrollmentNumberComboBox = this.Factory.CreateRibbonComboBox();
+            this.EaApiKeyComboBox = this.Factory.CreateRibbonComboBox();
+            this.TenantTypeDropDown = this.Factory.CreateRibbonDropDown();
+            this.HelpGroup = this.Factory.CreateRibbonGroup();
+            this.UpdateAddinButton = this.Factory.CreateRibbonButton();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
+            this.HelpGroup.SuspendLayout();
             this.SuspendLayout();
             // 
             // AzureRibbonTab
             // 
             this.AzureRibbonTab.Groups.Add(this.AuthenticationRibbonGroup);
             this.AzureRibbonTab.Groups.Add(this.BillingAPIsRibbonGroup);
+            this.AzureRibbonTab.Groups.Add(this.HelpGroup);
             this.AzureRibbonTab.Label = "Azure";
             this.AzureRibbonTab.Name = "AzureRibbonTab";
             // 
             // AuthenticationRibbonGroup
             // 
             this.AuthenticationRibbonGroup.Items.Add(this.AuthTenantIdEditBox);
+            this.AuthenticationRibbonGroup.Items.Add(this.TenantTypeDropDown);
             this.AuthenticationRibbonGroup.Items.Add(this.GetTokenButton);
             this.AuthenticationRibbonGroup.Label = "Authentication";
             this.AuthenticationRibbonGroup.Name = "AuthenticationRibbonGroup";
@@ -123,18 +131,14 @@
     "rm xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.";
             this.TenantIdComboBox.Text = null;
             // 
-            // AggregationGranularityDropDown
+            // ForceReAuthCheckBox
             // 
-            ribbonDropDownItemImpl1.Label = "Daily";
-            ribbonDropDownItemImpl1.Tag = "Daily";
-            ribbonDropDownItemImpl2.Label = "Hourly";
-            ribbonDropDownItemImpl2.Tag = "Hourly";
-            this.AggregationGranularityDropDown.Items.Add(ribbonDropDownItemImpl1);
-            this.AggregationGranularityDropDown.Items.Add(ribbonDropDownItemImpl2);
-            this.AggregationGranularityDropDown.Label = "Aggregation Granularity";
-            this.AggregationGranularityDropDown.Name = "AggregationGranularityDropDown";
-            this.AggregationGranularityDropDown.ScreenTip = "Aggregation Granularity";
-            this.AggregationGranularityDropDown.SuperTip = "Data granularity (Daily or Hourly). The default is Daily.";
+            this.ForceReAuthCheckBox.Checked = true;
+            this.ForceReAuthCheckBox.Label = "Force Re-Authentication";
+            this.ForceReAuthCheckBox.Name = "ForceReAuthCheckBox";
+            this.ForceReAuthCheckBox.ScreenTip = "Force Re-Authentication";
+            this.ForceReAuthCheckBox.SuperTip = "Uncheck to use cached credentials. Keep checked to always gets fresh credentials." +
+    "";
             // 
             // StartDateEditBox
             // 
@@ -153,6 +157,19 @@
             this.EndDateEditBox.SuperTip = "Report End Date (yyyy-mm-dd).  It can include a time portion for standard and CSP" +
     " accounts.";
             this.EndDateEditBox.Text = null;
+            // 
+            // AggregationGranularityDropDown
+            // 
+            ribbonDropDownItemImpl3.Label = "Daily";
+            ribbonDropDownItemImpl3.Tag = "Daily";
+            ribbonDropDownItemImpl4.Label = "Hourly";
+            ribbonDropDownItemImpl4.Tag = "Hourly";
+            this.AggregationGranularityDropDown.Items.Add(ribbonDropDownItemImpl3);
+            this.AggregationGranularityDropDown.Items.Add(ribbonDropDownItemImpl4);
+            this.AggregationGranularityDropDown.Label = "Aggregation Granularity";
+            this.AggregationGranularityDropDown.Name = "AggregationGranularityDropDown";
+            this.AggregationGranularityDropDown.ScreenTip = "Aggregation Granularity";
+            this.AggregationGranularityDropDown.SuperTip = "Data granularity (Daily or Hourly). The default is Daily.";
             // 
             // GetUsageReportButton
             // 
@@ -186,14 +203,13 @@
     " always get a fresh token.";
             this.GetEaUsageReportButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GetEaUsageReportButton_Click);
             // 
-            // ForceReAuthCheckBox
+            // EnrollmentNumberComboBox
             // 
-            this.ForceReAuthCheckBox.Checked = true;
-            this.ForceReAuthCheckBox.Label = "Force Re-Authentication";
-            this.ForceReAuthCheckBox.Name = "ForceReAuthCheckBox";
-            this.ForceReAuthCheckBox.ScreenTip = "Force Re-Authentication";
-            this.ForceReAuthCheckBox.SuperTip = "Uncheck to use cached credentials. Keep checked to always gets fresh credentials." +
-    "";
+            this.EnrollmentNumberComboBox.Label = "EA Enrollment Number";
+            this.EnrollmentNumberComboBox.Name = "EnrollmentNumberComboBox";
+            this.EnrollmentNumberComboBox.ScreenTip = "EA Enrollment Number";
+            this.EnrollmentNumberComboBox.SuperTip = "The Enrollment Number for the EA for which usage data is to be collected.";
+            this.EnrollmentNumberComboBox.Text = null;
             // 
             // EaApiKeyComboBox
             // 
@@ -202,13 +218,34 @@
             this.EaApiKeyComboBox.ScreenTip = "EA API Key";
             this.EaApiKeyComboBox.SuperTip = "An EA API Key (generated in the EA portal, http://ea.azure.com) is required for g" +
     "etting an EA Usage Report.";
+            this.EaApiKeyComboBox.Text = null;
             // 
-            // EnrollmentNumberComboBox
+            // TenantTypeDropDown
             // 
-            this.EnrollmentNumberComboBox.Label = "EA Enrollment Number";
-            this.EnrollmentNumberComboBox.Name = "EnrollmentNumberComboBox";
-            this.EnrollmentNumberComboBox.ScreenTip = "EA Enrollment Number";
-            this.EnrollmentNumberComboBox.SuperTip = "The Enrollment Number for the EA for which usage data is to be collected.";
+            ribbonDropDownItemImpl1.Label = "Standard";
+            ribbonDropDownItemImpl1.ScreenTip = "Standard";
+            ribbonDropDownItemImpl1.SuperTip = "Standard Azure account type.";
+            ribbonDropDownItemImpl2.Label = "CSP";
+            ribbonDropDownItemImpl2.ScreenTip = "CSP";
+            ribbonDropDownItemImpl2.SuperTip = "Cloud Solution Provider (CSP) account type.";
+            this.TenantTypeDropDown.Items.Add(ribbonDropDownItemImpl1);
+            this.TenantTypeDropDown.Items.Add(ribbonDropDownItemImpl2);
+            this.TenantTypeDropDown.Label = "Tenant Type";
+            this.TenantTypeDropDown.Name = "TenantTypeDropDown";
+            // 
+            // HelpGroup
+            // 
+            this.HelpGroup.Items.Add(this.UpdateAddinButton);
+            this.HelpGroup.Label = "Help";
+            this.HelpGroup.Name = "HelpGroup";
+            // 
+            // UpdateAddinButton
+            // 
+            this.UpdateAddinButton.Label = "Update Add-in";
+            this.UpdateAddinButton.Name = "UpdateAddinButton";
+            this.UpdateAddinButton.ScreenTip = "Update Add-in";
+            this.UpdateAddinButton.SuperTip = "Run the ClickOnce installer to update the add-in if a new version is available.";
+            this.UpdateAddinButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.UpdateAddinButton_Click);
             // 
             // AzureRibbon
             // 
@@ -222,6 +259,8 @@
             this.AuthenticationRibbonGroup.PerformLayout();
             this.BillingAPIsRibbonGroup.ResumeLayout(false);
             this.BillingAPIsRibbonGroup.PerformLayout();
+            this.HelpGroup.ResumeLayout(false);
+            this.HelpGroup.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -243,6 +282,9 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GetEaUsageReportButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox EaApiKeyComboBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox EnrollmentNumberComboBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonDropDown TenantTypeDropDown;
+        internal Microsoft.Office.Tools.Ribbon.RibbonGroup HelpGroup;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton UpdateAddinButton;
     }
 
     partial class ThisRibbonCollection
