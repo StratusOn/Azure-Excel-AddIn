@@ -52,7 +52,7 @@ namespace ExcelAddIn1
                 UsageApi usageApi = this.TenantTypeDropDown.SelectedItemIndex == 1
                     ? UsageApi.CloudSolutionProvider
                     : UsageApi.Standard;
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, usageApi);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, usageApi, null);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -81,7 +81,7 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard, this.ApplicationIdComboBox.Text);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -166,7 +166,7 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.CloudSolutionProvider);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.CloudSolutionProvider, this.ApplicationIdComboBox.Text);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {

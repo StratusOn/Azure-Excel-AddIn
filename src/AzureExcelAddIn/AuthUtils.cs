@@ -13,13 +13,14 @@ namespace ExcelAddIn1
         private const string AzureAuthUrl = "https://login.microsoftonline.com";
         private const string ApplicationId = "1950a258-227b-4e31-a9cf-717495945fc2";
 
-        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi)
+        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, string customApplicationId)
         {
             var authUrl = string.Format(CultureInfo.InvariantCulture, "{0}/{1}", AzureAuthUrl, tenantId);
             var context = new AuthenticationContext(authUrl);
             var resourceUrl = usageApi == UsageApi.CloudSolutionProvider
                 ? PartnerServiceResourceUrl
                 : AzureManagementResourceUrl;
+            var applicationId = string.IsNullOrWhiteSpace(customApplicationId) ? ApplicationId : customApplicationId;
 
             AuthenticationResult result;
             if (!forceReAuthentication)
@@ -32,7 +33,7 @@ namespace ExcelAddIn1
                     {
                         result = context.AcquireTokenSilent(
                             resourceUrl,
-                            ApplicationId,
+                            applicationId,
                             new UserIdentifier(userId.UniqueId,
                                 UserIdentifierType.OptionalDisplayableId));
                         return result.AccessToken;
@@ -43,7 +44,7 @@ namespace ExcelAddIn1
 
             result = context.AcquireToken(
                 resourceUrl,
-                ApplicationId,
+                applicationId,
                 new Uri(RedirectUrn),
                 forceReAuthentication ? PromptBehavior.Always : PromptBehavior.Auto);
             return result.AccessToken;

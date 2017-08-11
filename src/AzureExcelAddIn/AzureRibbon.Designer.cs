@@ -58,6 +58,7 @@
             this.TenantTypeDropDown = this.Factory.CreateRibbonDropDown();
             this.HelpGroup = this.Factory.CreateRibbonGroup();
             this.UpdateAddinButton = this.Factory.CreateRibbonButton();
+            this.ApplicationIdComboBox = this.Factory.CreateRibbonComboBox();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
@@ -110,6 +111,7 @@
             this.BillingAPIsRibbonGroup.Items.Add(this.GetEaUsageReportButton);
             this.BillingAPIsRibbonGroup.Items.Add(this.EnrollmentNumberComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.EaApiKeyComboBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.ApplicationIdComboBox);
             this.BillingAPIsRibbonGroup.Label = "Azure Usage APIs";
             this.BillingAPIsRibbonGroup.Name = "BillingAPIsRibbonGroup";
             // 
@@ -247,6 +249,13 @@
             this.UpdateAddinButton.SuperTip = "Run the ClickOnce installer to update the add-in if a new version is available.";
             this.UpdateAddinButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.UpdateAddinButton_Click);
             // 
+            // ApplicationIdComboBox
+            // 
+            this.ApplicationIdComboBox.Label = "App Id";
+            this.ApplicationIdComboBox.Name = "ApplicationIdComboBox";
+            this.ApplicationIdComboBox.ScreenTip = "Application Id";
+            this.ApplicationIdComboBox.SuperTip = "An optional application id (GUID) of an AAD client application.";
+            // 
             // AzureRibbon
             // 
             this.Name = "AzureRibbon";
@@ -285,6 +294,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown TenantTypeDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup HelpGroup;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton UpdateAddinButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox ApplicationIdComboBox;
     }
 
     partial class ThisRibbonCollection
