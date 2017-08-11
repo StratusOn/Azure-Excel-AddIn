@@ -9,5 +9,9 @@
         public string EnrollmentNumber { get; set; }
 
         public string EaApiKey { get; set; }
+
+        public string ApplicationId { get; set; }
+
+        public string ApplicationKey { get; set; }
     }
 }

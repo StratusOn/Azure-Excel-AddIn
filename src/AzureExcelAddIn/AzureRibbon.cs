@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows.Forms;
 using Microsoft.Office.Tools.Ribbon;
 using Newtonsoft.Json;
@@ -40,7 +41,7 @@ namespace ExcelAddIn1
 
         private void GetTokenButton_Click(object sender, RibbonControlEventArgs e)
         {
-            var tenantId = this.AuthTenantIdEditBox.Text;
+            var tenantId = this.AuthTenantIdEditBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(tenantId))
             {
                 MessageBox.Show($"ERROR: Tenant Id must be specified.", "Get Authentication Token", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -52,7 +53,7 @@ namespace ExcelAddIn1
                 UsageApi usageApi = this.TenantTypeDropDown.SelectedItemIndex == 1
                     ? UsageApi.CloudSolutionProvider
                     : UsageApi.Standard;
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, usageApi, null);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, usageApi);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -75,13 +76,13 @@ namespace ExcelAddIn1
                 return;
             }
 
-            var tenantId = this.TenantIdComboBox.Text;
+            var tenantId = this.TenantIdComboBox.Text.Trim();
 
             try
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard, this.ApplicationIdComboBox.Text);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard, this.ApplicationIdComboBox.Text.Trim(), this.AppKeyComboBox.Text.Trim());
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -93,9 +94,9 @@ namespace ExcelAddIn1
 
                 Globals.ThisAddIn.Application.StatusBar = "Getting usage report (standard)...";
 
-                var subscriptionId = this.SubscriptionIdComboBox.Text;
-                var reportStartDate = this.StartDateEditBox.Text;
-                var reportEndDate = this.EndDateEditBox.Text;
+                var subscriptionId = this.SubscriptionIdComboBox.Text.Trim();
+                var reportStartDate = this.StartDateEditBox.Text.Trim();
+                var reportEndDate = this.EndDateEditBox.Text.Trim();
                 var aggregationGranularity = (string)this.AggregationGranularityDropDown.SelectedItem.Tag;
                 var showDetails = "true"; // this.ShowDetailsCheckBox.Checked.ToString();
 
@@ -160,13 +161,13 @@ namespace ExcelAddIn1
                 return;
             }
 
-            var tenantId = this.TenantIdComboBox.Text;
+            var tenantId = this.TenantIdComboBox.Text.Trim();
 
             try
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.CloudSolutionProvider, this.ApplicationIdComboBox.Text);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.CloudSolutionProvider, this.ApplicationIdComboBox.Text.Trim(), this.AppKeyComboBox.Text.Trim());
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -178,9 +179,9 @@ namespace ExcelAddIn1
 
                 Globals.ThisAddIn.Application.StatusBar = "Getting usage report (CSP)...";
 
-                var subscriptionId = this.SubscriptionIdComboBox.Text;
-                var reportStartDate = this.StartDateEditBox.Text;
-                var reportEndDate = this.EndDateEditBox.Text;
+                var subscriptionId = this.SubscriptionIdComboBox.Text.Trim();
+                var reportStartDate = this.StartDateEditBox.Text.Trim();
+                var reportEndDate = this.EndDateEditBox.Text.Trim();
                 var aggregationGranularity = (string)this.AggregationGranularityDropDown.SelectedItem.Tag;
                 var showDetails = "true"; // this.ShowDetailsCheckBox.Checked.ToString();
 
@@ -250,10 +251,10 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Getting usage report (standard)...";
 
-                var enrollmentNumber = this.EnrollmentNumberComboBox.Text;
-                var apiKey = this.EaApiKeyComboBox.Text;
-                var reportStartDate = this.StartDateEditBox.Text;
-                var reportEndDate = this.EndDateEditBox.Text;
+                var enrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim();
+                var apiKey = this.EaApiKeyComboBox.Text.Trim();
+                var reportStartDate = this.StartDateEditBox.Text.Trim();
+                var reportEndDate = this.EndDateEditBox.Text.Trim();
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
@@ -309,6 +310,11 @@ namespace ExcelAddIn1
             }
         }
 
+        private void UpdateAddinButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            Process.Start(AddinInstallUrl);
+        }
+
         private bool ValidateUsageReportInput(UsageApi usageApi)
         {
             if (string.IsNullOrWhiteSpace(this.TenantIdComboBox.Text))
@@ -342,15 +348,24 @@ namespace ExcelAddIn1
                     MessageBox.Show($"ERROR: Enrollment Number must be specified for an EA Usage Report.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
                 }
+
+                if (string.IsNullOrWhiteSpace(this.EaApiKeyComboBox.Text))
+                {
+                    MessageBox.Show($"ERROR: An API Key generated from the EA Portal must be specified for an EA Usage Report.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(this.ApplicationIdComboBox.Text) && !string.IsNullOrWhiteSpace(this.AppKeyComboBox.Text))
+                {
+                    MessageBox.Show($"ERROR: Application Id must be specified when an Application Key is specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
             }
 
-            SecurityUtils.SaveUsageReportParameters(new PersistedData()
-            {
-                SubscriptionId = this.SubscriptionIdComboBox.Text.Trim(),
-                TenantId = this.TenantIdComboBox.Text.Trim(),
-                EnrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim(),
-                EaApiKey = this.EaApiKeyComboBox.Text.Trim()
-            });
+            this.PersistData();
+            this.AddDataToCombos();
 
             return true;
         }
@@ -453,6 +468,66 @@ namespace ExcelAddIn1
             }
         }
 
+        private void PersistData()
+        {
+            SecurityUtils.SaveUsageReportParameters(new PersistedData()
+            {
+                SubscriptionId = this.SubscriptionIdComboBox.Text.Trim(),
+                TenantId = this.TenantIdComboBox.Text.Trim(),
+                EnrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim(),
+                EaApiKey = this.EaApiKeyComboBox.Text.Trim(),
+                ApplicationId = this.ApplicationIdComboBox.Text.Trim(),
+                ApplicationKey = this.AppKeyComboBox.Text.Trim()
+            });
+        }
+
+        private void AddDataToCombos()
+        {
+            var ribbonFactory = Globals.Factory.GetRibbonFactory();
+
+            var subscriptionIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+            subscriptionIdRibbonDropDownItem.Label = this.SubscriptionIdComboBox.Text.Trim();
+            if (this.SubscriptionIdComboBox.Items.All(item => string.Compare(item.Label, subscriptionIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0 ))
+            {
+                this.SubscriptionIdComboBox.Items.Add(subscriptionIdRibbonDropDownItem);
+            }
+
+            var tenantIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+            tenantIdRibbonDropDownItem.Label = this.TenantIdComboBox.Text;
+            if (this.TenantIdComboBox.Items.All(item => string.Compare(item.Label, tenantIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            {
+                this.TenantIdComboBox.Items.Add(tenantIdRibbonDropDownItem);
+            }
+
+            var applicationIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+            applicationIdRibbonDropDownItem.Label = this.ApplicationIdComboBox.Text;
+            if (this.ApplicationIdComboBox.Items.All(item => string.Compare(item.Label, applicationIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            {
+                this.ApplicationIdComboBox.Items.Add(applicationIdRibbonDropDownItem);
+            }
+
+            var appKeyRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+            appKeyRibbonDropDownItem.Label = this.AppKeyComboBox.Text;
+            if (this.AppKeyComboBox.Items.All(item => string.Compare(item.Label, appKeyRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            {
+                this.AppKeyComboBox.Items.Add(appKeyRibbonDropDownItem);
+            }
+
+            var enrollmentNumberRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+            enrollmentNumberRibbonDropDownItem.Label = this.EnrollmentNumberComboBox.Text;
+            if (this.EnrollmentNumberComboBox.Items.All(item => string.Compare(item.Label, enrollmentNumberRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            {
+                this.EnrollmentNumberComboBox.Items.Add(enrollmentNumberRibbonDropDownItem);
+            }
+
+            var eaApiKeyRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+            eaApiKeyRibbonDropDownItem.Label = this.EaApiKeyComboBox.Text;
+            if (this.EaApiKeyComboBox.Items.All(item => string.Compare(item.Label, eaApiKeyRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            {
+                this.EaApiKeyComboBox.Items.Add(eaApiKeyRibbonDropDownItem);
+            }
+        }
+
         private void HydrateFromPersistedData()
         {
             var persistedData = SecurityUtils.GetSavedUsageReportParameters();
@@ -490,13 +565,23 @@ namespace ExcelAddIn1
                     ribbonDropDownItem.Label = persistedData.EaApiKey;
                     this.EaApiKeyComboBox.Items.Add(ribbonDropDownItem);
                 }
-                this.EaApiKeyComboBox.Text = persistedData.EaApiKey ?? string.Empty;
-            }
-        }
 
-        private void UpdateAddinButton_Click(object sender, RibbonControlEventArgs e)
-        {
-            Process.Start(AddinInstallUrl);
+                if (!string.IsNullOrWhiteSpace(persistedData.ApplicationId))
+                {
+                    this.ApplicationIdComboBox.Text = persistedData.ApplicationId;
+                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+                    ribbonDropDownItem.Label = persistedData.ApplicationId;
+                    this.ApplicationIdComboBox.Items.Add(ribbonDropDownItem);
+                }
+
+                if (!string.IsNullOrWhiteSpace(persistedData.ApplicationKey))
+                {
+                    this.AppKeyComboBox.Text = persistedData.ApplicationKey;
+                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+                    ribbonDropDownItem.Label = persistedData.ApplicationKey;
+                    this.AppKeyComboBox.Items.Add(ribbonDropDownItem);
+                }
+            }
         }
     }
 }

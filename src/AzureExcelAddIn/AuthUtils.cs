@@ -13,14 +13,26 @@ namespace ExcelAddIn1
         private const string AzureAuthUrl = "https://login.microsoftonline.com";
         private const string ApplicationId = "1950a258-227b-4e31-a9cf-717495945fc2";
 
-        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, string customApplicationId)
+        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi)
+        {
+            return GetAuthorizationHeader(tenantId, forceReAuthentication, usageApi, null, null);
+        }
+
+        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, string customApplicationId, string customApplicationKey)
         {
             var authUrl = string.Format(CultureInfo.InvariantCulture, "{0}/{1}", AzureAuthUrl, tenantId);
             var context = new AuthenticationContext(authUrl);
             var resourceUrl = usageApi == UsageApi.CloudSolutionProvider
                 ? PartnerServiceResourceUrl
                 : AzureManagementResourceUrl;
-            var applicationId = string.IsNullOrWhiteSpace(customApplicationId) ? ApplicationId : customApplicationId;
+            var customApplicationIdSpecified = !string.IsNullOrWhiteSpace(customApplicationId);
+            var applicationId = customApplicationIdSpecified ? customApplicationId : ApplicationId;
+
+            ClientCredential clientCredential = null;
+            if (customApplicationIdSpecified && !string.IsNullOrWhiteSpace(customApplicationKey))
+            {
+                clientCredential = new ClientCredential(applicationId, customApplicationKey);
+            }
 
             AuthenticationResult result;
             if (!forceReAuthentication)
@@ -31,22 +43,44 @@ namespace ExcelAddIn1
                     var userId = TokenCache.DefaultShared.ReadItems().FirstOrDefault();
                     if (userId != null)
                     {
-                        result = context.AcquireTokenSilent(
-                            resourceUrl,
-                            applicationId,
-                            new UserIdentifier(userId.UniqueId,
-                                UserIdentifierType.OptionalDisplayableId));
+                        if (clientCredential != null)
+                        {
+                            result = context.AcquireTokenSilent(
+                                resourceUrl,
+                                clientCredential,
+                                new UserIdentifier(userId.UniqueId,
+                                    UserIdentifierType.OptionalDisplayableId));
+                        }
+                        else
+                        {
+                            result = context.AcquireTokenSilent(
+                                resourceUrl,
+                                applicationId,
+                                new UserIdentifier(userId.UniqueId,
+                                    UserIdentifierType.OptionalDisplayableId));
+                        }
+
                         return result.AccessToken;
                     }
                 }
                 catch { /* swallowing auth exceptions only for silent auth */ }
             }
 
-            result = context.AcquireToken(
-                resourceUrl,
-                applicationId,
-                new Uri(RedirectUrn),
-                forceReAuthentication ? PromptBehavior.Always : PromptBehavior.Auto);
+            if (clientCredential != null)
+            {
+                result = context.AcquireToken(
+                    resourceUrl,
+                    clientCredential);
+            }
+            else
+            {
+                result = context.AcquireToken(
+                    resourceUrl,
+                    applicationId,
+                    new Uri(RedirectUrn),
+                    forceReAuthentication ? PromptBehavior.Always : PromptBehavior.Auto);
+            }
+
             return result.AccessToken;
         }
     }
