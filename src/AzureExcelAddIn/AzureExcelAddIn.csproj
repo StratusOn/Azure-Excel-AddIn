@@ -31,10 +31,10 @@
     <IsWebBootstrapper>True</IsWebBootstrapper>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <PublishUrl Condition="'$(PublishUrl)' == ''">publish\</PublishUrl>
-    <InstallUrl>http://billingtools.azurewebsites.net/excel/install/</InstallUrl>
+    <InstallUrl Condition="'$(InstallUrl)' == ''">http://billingtools.azurewebsites.net/excel/install/</InstallUrl>
     <TargetCulture>en</TargetCulture>
-    <ApplicationVersion>1.0.0.11</ApplicationVersion>
-    <AutoIncrementApplicationRevision>true</AutoIncrementApplicationRevision>
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">1.0.0.15</ApplicationVersion>
+    <AutoIncrementApplicationRevision>false</AutoIncrementApplicationRevision>
     <UpdateEnabled>true</UpdateEnabled>
     <UpdateInterval>7</UpdateInterval>
     <UpdateIntervalUnits>days</UpdateIntervalUnits>
