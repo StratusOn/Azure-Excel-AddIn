@@ -187,19 +187,19 @@
     can be found.
   -->
   <ItemGroup>
-    <Compile Include="AuthUtils.cs" />
-    <Compile Include="BillingUtils.cs" />
-    <Compile Include="CspUsageAggregates.cs" />
-    <Compile Include="EaUsageAggregates.cs" />
-    <Compile Include="ExcelUtils.cs" />
-    <Compile Include="JsonUtils.cs" />
-    <Compile Include="PersistedData.cs" />
+    <Compile Include="Utils\AuthUtils.cs" />
+    <Compile Include="Utils\BillingUtils.cs" />
+    <Compile Include="Model\CspUsageAggregates.cs" />
+    <Compile Include="Model\EaUsageAggregates.cs" />
+    <Compile Include="Utils\ExcelUtils.cs" />
+    <Compile Include="Utils\JsonUtils.cs" />
+    <Compile Include="Model\PersistedData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="SecurityUtils.cs" />
-    <Compile Include="UsageAggregates.cs" />
-    <Compile Include="UsageApi.cs" />
+    <Compile Include="Utils\SecurityUtils.cs" />
+    <Compile Include="Model\UsageAggregates.cs" />
+    <Compile Include="Model\UsageApi.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -240,8 +240,8 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Azure Acitve Directory Access Control.png" />
-    <None Include="BillingHub.png" />
+    <None Include="Images\Azure Acitve Directory Access Control.png" />
+    <None Include="Images\BillingHub.png" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
