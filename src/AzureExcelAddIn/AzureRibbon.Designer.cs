@@ -34,20 +34,21 @@
         /// </summary>
         private void InitializeComponent()
         {
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl1 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl2 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl3 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl4 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl5 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl6 = this.Factory.CreateRibbonDropDownItem();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AzureRibbon));
-            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl9 = this.Factory.CreateRibbonDropDownItem();
-            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl10 = this.Factory.CreateRibbonDropDownItem();
-            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl1 = this.Factory.CreateRibbonDropDownItem();
-            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl2 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl7 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl8 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl9 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl10 = this.Factory.CreateRibbonDropDownItem();
             this.AzureRibbonTab = this.Factory.CreateRibbonTab();
             this.AuthenticationRibbonGroup = this.Factory.CreateRibbonGroup();
             this.AuthTenantIdEditBox = this.Factory.CreateRibbonEditBox();
+            this.TenantTypeDropDown = this.Factory.CreateRibbonDropDown();
             this.GetTokenButton = this.Factory.CreateRibbonButton();
             this.BillingAPIsRibbonGroup = this.Factory.CreateRibbonGroup();
             this.SubscriptionIdComboBox = this.Factory.CreateRibbonComboBox();
@@ -59,24 +60,27 @@
             this.GetUsageReportButton = this.Factory.CreateRibbonButton();
             this.GetCspUsageReportButton = this.Factory.CreateRibbonButton();
             this.GetEaUsageReportButton = this.Factory.CreateRibbonButton();
-            this.EnrollmentNumberComboBox = this.Factory.CreateRibbonComboBox();
-            this.EaApiKeyComboBox = this.Factory.CreateRibbonComboBox();
-            this.TenantTypeDropDown = this.Factory.CreateRibbonDropDown();
-            this.HelpGroup = this.Factory.CreateRibbonGroup();
-            this.UpdateAddinButton = this.Factory.CreateRibbonButton();
             this.ApplicationIdComboBox = this.Factory.CreateRibbonComboBox();
             this.AppKeyComboBox = this.Factory.CreateRibbonComboBox();
             this.FillerLabel = this.Factory.CreateRibbonLabel();
+            this.EnrollmentNumberComboBox = this.Factory.CreateRibbonComboBox();
+            this.EaApiKeyComboBox = this.Factory.CreateRibbonComboBox();
+            this.HelpGroup = this.Factory.CreateRibbonGroup();
+            this.UpdateAddinButton = this.Factory.CreateRibbonButton();
+            this.RateCardGroup = this.Factory.CreateRibbonGroup();
+            this.GetRateCardButton = this.Factory.CreateRibbonButton();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
             this.HelpGroup.SuspendLayout();
+            this.RateCardGroup.SuspendLayout();
             this.SuspendLayout();
             // 
             // AzureRibbonTab
             // 
             this.AzureRibbonTab.Groups.Add(this.AuthenticationRibbonGroup);
             this.AzureRibbonTab.Groups.Add(this.BillingAPIsRibbonGroup);
+            this.AzureRibbonTab.Groups.Add(this.RateCardGroup);
             this.AzureRibbonTab.Groups.Add(this.HelpGroup);
             this.AzureRibbonTab.Label = "Azure";
             this.AzureRibbonTab.Name = "AzureRibbonTab";
@@ -97,6 +101,19 @@
             this.AuthTenantIdEditBox.SuperTip = "The user\'s tenant id (standard and CSP) or the customer tenant id (EA), in the fo" +
     "rm xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.";
             this.AuthTenantIdEditBox.Text = null;
+            // 
+            // TenantTypeDropDown
+            // 
+            ribbonDropDownItemImpl1.Label = "Standard";
+            ribbonDropDownItemImpl1.ScreenTip = "Standard";
+            ribbonDropDownItemImpl1.SuperTip = "Standard Azure account type.";
+            ribbonDropDownItemImpl2.Label = "CSP";
+            ribbonDropDownItemImpl2.ScreenTip = "CSP";
+            ribbonDropDownItemImpl2.SuperTip = "Cloud Solution Provider (CSP) account type.";
+            this.TenantTypeDropDown.Items.Add(ribbonDropDownItemImpl1);
+            this.TenantTypeDropDown.Items.Add(ribbonDropDownItemImpl2);
+            this.TenantTypeDropDown.Label = "Tenant Type";
+            this.TenantTypeDropDown.Name = "TenantTypeDropDown";
             // 
             // GetTokenButton
             // 
@@ -217,6 +234,29 @@
     " always get a fresh token.";
             this.GetEaUsageReportButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GetEaUsageReportButton_Click);
             // 
+            // ApplicationIdComboBox
+            // 
+            this.ApplicationIdComboBox.Items.Add(ribbonDropDownItemImpl7);
+            this.ApplicationIdComboBox.Label = "App Id";
+            this.ApplicationIdComboBox.Name = "ApplicationIdComboBox";
+            this.ApplicationIdComboBox.ScreenTip = "Application Id";
+            this.ApplicationIdComboBox.SuperTip = "An optional application id (GUID) of an AAD client application.";
+            this.ApplicationIdComboBox.Text = null;
+            // 
+            // AppKeyComboBox
+            // 
+            this.AppKeyComboBox.Items.Add(ribbonDropDownItemImpl8);
+            this.AppKeyComboBox.Label = "App Key";
+            this.AppKeyComboBox.Name = "AppKeyComboBox";
+            this.AppKeyComboBox.ScreenTip = "App Key";
+            this.AppKeyComboBox.SuperTip = "Application key (secret) for the AAD application.";
+            this.AppKeyComboBox.Text = null;
+            // 
+            // FillerLabel
+            // 
+            this.FillerLabel.Label = " ";
+            this.FillerLabel.Name = "FillerLabel";
+            // 
             // EnrollmentNumberComboBox
             // 
             this.EnrollmentNumberComboBox.Items.Add(ribbonDropDownItemImpl9);
@@ -236,19 +276,6 @@
     "etting an EA Usage Report.";
             this.EaApiKeyComboBox.Text = null;
             // 
-            // TenantTypeDropDown
-            // 
-            ribbonDropDownItemImpl1.Label = "Standard";
-            ribbonDropDownItemImpl1.ScreenTip = "Standard";
-            ribbonDropDownItemImpl1.SuperTip = "Standard Azure account type.";
-            ribbonDropDownItemImpl2.Label = "CSP";
-            ribbonDropDownItemImpl2.ScreenTip = "CSP";
-            ribbonDropDownItemImpl2.SuperTip = "Cloud Solution Provider (CSP) account type.";
-            this.TenantTypeDropDown.Items.Add(ribbonDropDownItemImpl1);
-            this.TenantTypeDropDown.Items.Add(ribbonDropDownItemImpl2);
-            this.TenantTypeDropDown.Label = "Tenant Type";
-            this.TenantTypeDropDown.Name = "TenantTypeDropDown";
-            // 
             // HelpGroup
             // 
             this.HelpGroup.Items.Add(this.UpdateAddinButton);
@@ -263,26 +290,19 @@
             this.UpdateAddinButton.SuperTip = "Run the ClickOnce installer to update the add-in if a new version is available.";
             this.UpdateAddinButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.UpdateAddinButton_Click);
             // 
-            // ApplicationIdComboBox
+            // RateCardGroup
             // 
-            this.ApplicationIdComboBox.Items.Add(ribbonDropDownItemImpl7);
-            this.ApplicationIdComboBox.Label = "App Id";
-            this.ApplicationIdComboBox.Name = "ApplicationIdComboBox";
-            this.ApplicationIdComboBox.ScreenTip = "Application Id";
-            this.ApplicationIdComboBox.SuperTip = "An optional application id (GUID) of an AAD client application.";
+            this.RateCardGroup.Items.Add(this.GetRateCardButton);
+            this.RateCardGroup.Label = "RateCard";
+            this.RateCardGroup.Name = "RateCardGroup";
             // 
-            // AppKeyComboBox
+            // GetRateCardButton
             // 
-            this.AppKeyComboBox.Items.Add(ribbonDropDownItemImpl8);
-            this.AppKeyComboBox.Label = "App Key";
-            this.AppKeyComboBox.Name = "AppKeyComboBox";
-            this.AppKeyComboBox.ScreenTip = "App Key";
-            this.AppKeyComboBox.SuperTip = "Application key (secret) for the AAD application.";
-            // 
-            // FillerLabel
-            // 
-            this.FillerLabel.Label = " ";
-            this.FillerLabel.Name = "FillerLabel";
+            this.GetRateCardButton.Image = global::ExcelAddIn1.Properties.Resources.BillingHub;
+            this.GetRateCardButton.Label = "Get RateCard";
+            this.GetRateCardButton.Name = "GetRateCardButton";
+            this.GetRateCardButton.ShowImage = true;
+            this.GetRateCardButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GetRateCardButton_Click);
             // 
             // AzureRibbon
             // 
@@ -298,6 +318,8 @@
             this.BillingAPIsRibbonGroup.PerformLayout();
             this.HelpGroup.ResumeLayout(false);
             this.HelpGroup.PerformLayout();
+            this.RateCardGroup.ResumeLayout(false);
+            this.RateCardGroup.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -325,6 +347,8 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox ApplicationIdComboBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox AppKeyComboBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonLabel FillerLabel;
+        internal Microsoft.Office.Tools.Ribbon.RibbonGroup RateCardGroup;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton GetRateCardButton;
     }
 
     partial class ThisRibbonCollection

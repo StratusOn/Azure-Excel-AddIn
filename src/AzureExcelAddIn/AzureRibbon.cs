@@ -29,6 +29,11 @@ namespace ExcelAddIn1
             "Instance Id", "Service Info 1", "Service Info 2", "Additional Info", "Store Service Identifier", "Cost Center", "Resource Group"
         };
 
+        private readonly string[] HeaderCaptionsRateCard =
+        {
+            "Meter Id", "Meter Name", "Meter Category", "Meter Sub-Category", "Unit", "Meter Region", "Meter Rates", "Effective Date", "Included Quantity"
+        };
+
         private void AzureRibbonTab_Load(object sender, RibbonUIEventArgs e)
         {
             var today = DateTime.Today;
@@ -106,7 +111,7 @@ namespace ExcelAddIn1
                 int rowNumber = headerRowNumber + 2;
                 Excel.Worksheet currentActiveWorksheet = null;
                 int currentContinuationCount = 0;
-                UsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesStandard(token, subscriptionId, reportStartDate, reportEndDate, aggregationGranularity, showDetails);
+                UsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesStandardAsync(token, subscriptionId, reportStartDate, reportEndDate, aggregationGranularity, showDetails);
 
                 do
                 {
@@ -136,7 +141,7 @@ namespace ExcelAddIn1
                         break;
                     }
 
-                    string content = await BillingUtils.GetUsageAggregates(token, continuationLink);
+                    string content = await BillingUtils.GetRestCallResultsAsync(token, continuationLink);
                     usageAggregates = JsonConvert.DeserializeObject<UsageAggregates>(content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
@@ -192,7 +197,7 @@ namespace ExcelAddIn1
                 Excel.Worksheet currentActiveWorksheet = null;
                 int currentContinuationCount = 0;
                 int chunkSize = DefaultChunkSize;
-                CspUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesCsp(token, subscriptionId, tenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize);
+                CspUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesCspAsync(token, subscriptionId, tenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize);
 
                 do
                 {
@@ -222,7 +227,7 @@ namespace ExcelAddIn1
                         break;
                     }
 
-                    string content = await BillingUtils.GetUsageAggregates(token, continuationLink);
+                    string content = await BillingUtils.GetRestCallResultsAsync(token, continuationLink);
                     usageAggregates = JsonConvert.DeserializeObject<CspUsageAggregates>(content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
@@ -262,7 +267,7 @@ namespace ExcelAddIn1
                 int rowNumber = headerRowNumber + 2;
                 Excel.Worksheet currentActiveWorksheet = null;
                 int currentContinuationCount = 0;
-                EaUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesEa(apiKey, enrollmentNumber, reportStartDate, reportEndDate);
+                EaUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesEaAsync(apiKey, enrollmentNumber, reportStartDate, reportEndDate);
 
                 do
                 {
@@ -292,7 +297,7 @@ namespace ExcelAddIn1
                         break;
                     }
 
-                    string content = await BillingUtils.GetUsageAggregates(apiKey, continuationLink);
+                    string content = await BillingUtils.GetRestCallResultsAsync(apiKey, continuationLink);
                     usageAggregates = JsonConvert.DeserializeObject<EaUsageAggregates>(content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
@@ -303,6 +308,67 @@ namespace ExcelAddIn1
             {
                 MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
                     "Get Usage Report (EA)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Globals.ThisAddIn.Application.StatusBar = "Ready";
+            }
+        }
+
+        private async void GetRateCardButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            if (!this.ValidateUsageReportInput(UsageApi.Standard))
+            {
+                return;
+            }
+
+            var tenantId = this.TenantIdComboBox.Text.Trim();
+
+            try
+            {
+                Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
+
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, UsageApi.Standard, null, null);
+
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    MessageBox.Show(
+                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials, the correct Tenant Id and Subscription Id, and make sure 'Force Re-Authentication' is checked and try again.",
+                        "Get Rate Card", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                Globals.ThisAddIn.Application.StatusBar = "Getting rate card (standard)...";
+
+                var subscriptionId = this.SubscriptionIdComboBox.Text.Trim();
+                var offerDurableId = "MS-AZR-0003P";
+                var currency = "USD";
+                var locale = "en-US";
+                var regionInfo = "US";
+
+                // Write the report line items:
+                int startColumnNumber = 1; // A
+                int headerRowNumber = 9;
+                int rowNumber = headerRowNumber + 2;
+                RateCard rateCard = await BillingUtils.GetRateCardStandardAsync(token, subscriptionId, offerDurableId, currency, locale, regionInfo);
+                if (rateCard == null)
+                {
+                    MessageBox.Show(
+                        $"ERROR: Failed to get the rate card. Verify the correct parameters were provided for Subscription Id, Offer Id, currency, locale, and region info and try again.",
+                        "Get Rate Card", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Add a fresh worksheet and write the results.
+                Excel.Worksheet currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
+                this.PrintRateCardHeader(startColumnNumber, headerRowNumber, rateCard, currentActiveWorksheet, UsageApi.Standard);
+                this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard, currentActiveWorksheet);
+                this.FormatTags(UsageApi.Standard, rowNumber, currentActiveWorksheet);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"ERROR: Failed to get rate card: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
+                    "Get Rate Card", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -418,8 +484,37 @@ namespace ExcelAddIn1
             {
                 currentActiveWorksheet.get_Range($"B{tableFirstRowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageEndTime
             }
+        }
 
-            //currentActiveWorksheet.get_Range("K11").EntireColumn.NumberFormat = "#####.###################"; // Quantity
+        private void PrintRateCardHeader(int startColumnNumber, int headerRowNumber, RateCard rateCard, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
+        {
+            Globals.ThisAddIn.Application.StatusBar = "Displaying rate card header...";
+
+            var tenantId = this.TenantIdComboBox.Text;
+            var subscriptionId = this.SubscriptionIdComboBox.Text;
+            var offerDurableId = "MS-AZR-0003P";
+            var currency = "USD";
+            var locale = "en-US";
+            var regionInfo = "US";
+            var tableFirstRowNumber = "13";
+
+            // Write the report header:
+            ExcelUtils.WriteHeaderRow("A1", "B1", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A2", "B2", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A3", "B3", new[] { "Offer Durable Id:", $"{offerDurableId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A4", "B4", new[] { "Currency:", $"{currency}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A5", "B5", new[] { "Locale:", $"{locale}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A6", "B6", new[] { "Region Info:", $"{regionInfo}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A7", "B7", new[] { "Meter Region:", $"{rateCard.MeterRegion}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A8", "B8", new[] { "RateCard generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
+            if (rateCard.OfferTerms.Length > 0)
+            {
+                ExcelUtils.WriteHeaderRow("A9", "B9", new[] { "Offer Terms Name:", $"{rateCard.OfferTerms[0].Name}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow("A10", "B10", new[] { "Offer Terms Duration:", $"{rateCard.OfferTerms[0].EffectiveDate}" }, currentActiveWorksheet);
+                tableFirstRowNumber = "15";
+            }
+
+            ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, headerRowNumber, this.GetRateCardHeaderCaptions(usageApi), currentActiveWorksheet);
         }
 
         private string[] GetHeaderCaptions(UsageApi usageApi)
@@ -432,6 +527,19 @@ namespace ExcelAddIn1
                     return this.HeaderCaptionsEa;
                 default:
                     return this.HeaderCaptions;
+            }
+        }
+
+        private string[] GetRateCardHeaderCaptions(UsageApi usageApi)
+        {
+            switch (usageApi)
+            {
+                case UsageApi.CloudSolutionProvider:
+                    return this.HeaderCaptionsRateCard;
+                case UsageApi.EnterpriseAgreement:
+                    return this.HeaderCaptionsRateCard;
+                default:
+                    return this.HeaderCaptionsRateCard;
             }
         }
 
@@ -452,7 +560,7 @@ namespace ExcelAddIn1
 
             foreach (var usageAggregate in usageAggregates.items)
             {
-                ExcelUtils.WriteUsageLineItemCsp(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptions.Length, currentActiveWorksheet);
+                ExcelUtils.WriteUsageLineItemCsp(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptionsCsp.Length, currentActiveWorksheet);
                 rowNumber++;
             }
         }
@@ -463,7 +571,18 @@ namespace ExcelAddIn1
 
             foreach (var usageAggregate in usageAggregates.data)
             {
-                ExcelUtils.WriteUsageLineItemEa(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptions.Length, currentActiveWorksheet);
+                ExcelUtils.WriteUsageLineItemEa(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptionsEa.Length, currentActiveWorksheet);
+                rowNumber++;
+            }
+        }
+
+        private void PrintRateCardReport(int startColumnNumber, int rowNumber, RateCard rateCard, Excel.Worksheet currentActiveWorksheet)
+        {
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying standard rate card...";
+
+            foreach (var meter in rateCard.Meters)
+            {
+                ExcelUtils.WriteRateCardLineItem(startColumnNumber, rowNumber, meter, this.HeaderCaptionsRateCard.Length, currentActiveWorksheet);
                 rowNumber++;
             }
         }

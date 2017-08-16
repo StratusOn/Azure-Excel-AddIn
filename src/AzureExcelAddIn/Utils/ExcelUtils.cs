@@ -48,5 +48,14 @@
             Microsoft.Office.Interop.Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
             currentRow.Value2 = BillingUtils.GetLineItemFieldsEa(lineItem);
         }
+
+        public static void WriteRateCardLineItem(int startColumnNumber, int rowNumber, Meter meterItem, int numberOfColumns, Microsoft.Office.Interop.Excel.Worksheet activeWorksheet)
+        {
+            Microsoft.Office.Interop.Excel.Range c1 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber];
+            Microsoft.Office.Interop.Excel.Range c2 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber + numberOfColumns - 1];
+            Microsoft.Office.Interop.Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
+
+            currentRow.Value2 = BillingUtils.GetLineItemFields(meterItem);
+        }
     }
 }

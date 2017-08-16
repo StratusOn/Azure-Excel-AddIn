@@ -9,30 +9,38 @@ namespace ExcelAddIn1
 {
     internal class BillingUtils
     {
-        public static async Task<UsageAggregates> GetUsageAggregatesStandard(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
+        public static async Task<RateCard> GetRateCardStandardAsync(string authorizationToken, string subscriptionId, string offerDurableId, string currency, string locale, string regionInfo, string apiVersion = "2015-06-01-preview")
+        {
+            string usageAggregatesUrl =
+            $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/RateCard?api-version={apiVersion}&$filter=OfferDurableId eq '{offerDurableId}' and Currency eq '{currency}' and Locale eq '{locale}' and RegionInfo eq '{regionInfo}'";
+            string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
+            return JsonConvert.DeserializeObject<RateCard>(content);
+        }
+
+        public static async Task<UsageAggregates> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
         {
             string usageAggregatesUrl =
                         $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/UsageAggregates?api-version=2015-06-01-preview&reportedStartTime={reportStartDate}&reportedEndTime={reportEndDate}&aggregationGranularity={aggregationGranularity}&showDetails={showDetails}";
-            string content = await GetUsageAggregates(authorizationToken, usageAggregatesUrl);
+            string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
             return JsonConvert.DeserializeObject<UsageAggregates>(content);
         }
 
-        public static async Task<CspUsageAggregates> GetUsageAggregatesCsp(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize)
+        public static async Task<CspUsageAggregates> GetUsageAggregatesCspAsync(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize)
         {
-            string usageAggregatesUrl = 
+            string usageAggregatesUrl =
                 $"https://api.partnercenter.microsoft.com/v1/customers/{customerTenantId}/subscriptions/{subscriptionId}/utilizations/azure?start_time={reportStartDate}&end_time={reportEndDate}&size={chunkSize}";
-            string content = await GetUsageAggregates(authorizationToken, usageAggregatesUrl);
+            string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
             return JsonConvert.DeserializeObject<CspUsageAggregates>(content);
         }
 
-        public static async Task<EaUsageAggregates> GetUsageAggregatesEa(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate)
+        public static async Task<EaUsageAggregates> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate)
         {
             string usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/usagedetailsbycustomdate?startTime={reportStartDate}&endTime={reportEndDate}";
-            string content = await GetUsageAggregates(authorizationToken, usageAggregatesUrl);
+            string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
             return JsonConvert.DeserializeObject<EaUsageAggregates>(content);
         }
 
-        public static async Task<string> GetUsageAggregates(string authorizationToken, string url)
+        public static async Task<string> GetRestCallResultsAsync(string authorizationToken, string url)
         {
             HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorizationToken);
@@ -148,6 +156,22 @@ namespace ExcelAddIn1
             fields.Add(lineItem.storeServiceIdentifier);
             fields.Add(lineItem.costCenter);
             fields.Add(lineItem.resourceGroup);
+
+            return fields.ToArray();
+        }
+
+        public static object[] GetLineItemFields(Meter lineItem)
+        {
+            List<object> fields = new List<object>();
+            fields.Add(lineItem.MeterId);
+            fields.Add(lineItem.MeterName);
+            fields.Add(lineItem.MeterCategory);
+            fields.Add(lineItem.MeterSubCategory);
+            fields.Add(lineItem.Unit);
+            fields.Add(lineItem.MeterRegion);
+            fields.Add(lineItem.MeterRates.Count > 0 ? lineItem.MeterRates.First.ToString() : string.Empty);
+            fields.Add(lineItem.EffectiveDate);
+            fields.Add(lineItem.IncludedQuantity);
 
             return fields.ToArray();
         }
