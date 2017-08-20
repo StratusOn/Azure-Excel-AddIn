@@ -128,6 +128,7 @@ namespace ExcelAddIn1
                         // Add a fresh worksheet.
                         Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
                         currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
+                        currentActiveWorksheet.SetWorksheetName(UsageApi.Standard, BillingApiType.Usage);
                         this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.Standard);
                     }
 
@@ -214,6 +215,7 @@ namespace ExcelAddIn1
                         // Add a fresh worksheet.
                         Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
                         currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
+                        currentActiveWorksheet.SetWorksheetName(UsageApi.CloudSolutionProvider, BillingApiType.Usage);
                         this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.CloudSolutionProvider);
                     }
 
@@ -284,6 +286,7 @@ namespace ExcelAddIn1
                         // Add a fresh worksheet.
                         Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
                         currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
+                        currentActiveWorksheet.SetWorksheetName(UsageApi.EnterpriseAgreement, BillingApiType.Usage);
                         this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.EnterpriseAgreement);
                     }
 
@@ -361,6 +364,7 @@ namespace ExcelAddIn1
 
                 // Add a fresh worksheet and write the results.
                 Excel.Worksheet currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
+                currentActiveWorksheet.SetWorksheetName(UsageApi.Standard, BillingApiType.RateCard);
                 this.PrintRateCardHeader(startColumnNumber, headerRowNumber, rateCard, currentActiveWorksheet, UsageApi.Standard);
                 this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard, currentActiveWorksheet);
                 this.FormatTags(UsageApi.Standard, rowNumber, currentActiveWorksheet);

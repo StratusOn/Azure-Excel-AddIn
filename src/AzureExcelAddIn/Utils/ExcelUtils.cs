@@ -1,7 +1,25 @@
-﻿namespace ExcelAddIn1
+﻿using System;
+using System.Globalization;
+using Microsoft.Office.Interop.Excel;
+
+namespace ExcelAddIn1
 {
+    public enum BillingApiType
+    {
+        Usage = 0,
+        RateCard = 1
+    }
+
     internal static class ExcelUtils
     {
+        private const string StandardUsageReportWorksheetNameTemplate = "Azure Usage{0}";
+        private const string CspUsageReportWorksheetNameTemplate = "Azure CSP Usage{0}";
+        private const string EaUsageReportWorksheetNameTemplate = "Azure EA Usage{0}";
+        private const string StandardRateCardWorksheetNameTemplate = "RateCard{0}";
+        private const string CspRateCardWorksheetNameTemplate = "CSP RateCard{0}";
+        private const string EaRateCardWorksheetNameTemplate = "EA RateCard{0}";
+        private const int MaxNameRetries = 100;
+
         public static void WriteHeaderRow(string nameCell, string valueCell, string[] content, Microsoft.Office.Interop.Excel.Worksheet activeWorksheet)
         {
             Microsoft.Office.Interop.Excel.Range currentRow = activeWorksheet.get_Range(nameCell);
@@ -29,7 +47,7 @@
             Microsoft.Office.Interop.Excel.Range c1 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber];
             Microsoft.Office.Interop.Excel.Range c2 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber + numberOfColumns - 1];
             Microsoft.Office.Interop.Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
-       
+
             currentRow.Value2 = BillingUtils.GetLineItemFields(lineItem);
         }
 
@@ -56,6 +74,57 @@
             Microsoft.Office.Interop.Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
 
             currentRow.Value2 = BillingUtils.GetLineItemFields(meterItem);
+        }
+
+        public static void SetWorksheetName(this Worksheet worksheet, UsageApi usageApi, BillingApiType billingApiType)
+        {
+            int counter = 1;
+            do
+            {
+                string worksheetName = null;
+                switch (usageApi)
+                {
+                    case UsageApi.CloudSolutionProvider:
+                        worksheetName = string.Format(CultureInfo.CurrentUICulture,
+                            billingApiType == BillingApiType.RateCard
+                                ? CspRateCardWorksheetNameTemplate
+                                : CspUsageReportWorksheetNameTemplate, counter);
+                        break;
+                    case UsageApi.EnterpriseAgreement:
+                        worksheetName = string.Format(CultureInfo.CurrentUICulture,
+                            billingApiType == BillingApiType.RateCard
+                                ? EaRateCardWorksheetNameTemplate
+                                : EaUsageReportWorksheetNameTemplate, counter);
+                        break;
+                    default:
+                        worksheetName = string.Format(CultureInfo.CurrentUICulture,
+                            billingApiType == BillingApiType.RateCard
+                                ? StandardRateCardWorksheetNameTemplate
+                                : StandardUsageReportWorksheetNameTemplate, counter);
+                        break;
+                }
+
+                if (!Globals.ThisAddIn.Application.Worksheets.Contains(worksheetName))
+                {
+                    worksheet.Name = worksheetName;
+                    return;
+                }
+
+                counter++;
+            } while (counter < MaxNameRetries);
+        }
+
+        public static bool Contains(this Sheets sheets, string name)
+        {
+            foreach (Worksheet sheet in sheets)
+            {
+                if (string.Compare(sheet.Name, name, StringComparison.CurrentCultureIgnoreCase) == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

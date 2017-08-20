@@ -163,13 +163,14 @@ namespace ExcelAddIn1
         public static object[] GetLineItemFields(Meter lineItem)
         {
             List<object> fields = new List<object>();
+            var meterRate = ((string) ((Newtonsoft.Json.Linq.JProperty) lineItem.MeterRates.First).Value); // Value can be cast to double.
             fields.Add(lineItem.MeterId);
             fields.Add(lineItem.MeterName);
             fields.Add(lineItem.MeterCategory);
             fields.Add(lineItem.MeterSubCategory);
             fields.Add(lineItem.Unit);
             fields.Add(lineItem.MeterRegion);
-            fields.Add(lineItem.MeterRates.Count > 0 ? lineItem.MeterRates.First.ToString() : string.Empty);
+            fields.Add(lineItem.MeterRates.Count > 0 ? meterRate : string.Empty);
             fields.Add(lineItem.EffectiveDate);
             fields.Add(lineItem.IncludedQuantity);
 
