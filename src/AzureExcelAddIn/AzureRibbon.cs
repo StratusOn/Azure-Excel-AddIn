@@ -534,12 +534,12 @@ namespace ExcelAddIn1
         {
             Globals.ThisAddIn.Application.StatusBar = "Displaying rate card header...";
 
-            var tenantId = this.TenantIdComboBox.Text;
-            var subscriptionId = this.SubscriptionIdComboBox.Text;
-            var offerDurableId = "MS-AZR-0003P";
-            var currency = "USD";
-            var locale = "en-US";
-            var regionInfo = "US";
+            var tenantId = this.TenantIdComboBox.Text.Trim();
+            var subscriptionId = this.SubscriptionIdComboBox.Text.Trim();
+            var offerDurableId = this.RateCardOfferDurableIdComboBox.Text.Trim();
+            var currency = this.RateCardCurrencyComboBox.Text.Trim();
+            var locale = this.RateCardLocaleComboBox.Text.Trim();
+            var regionInfo = this.RateCardRegionInfoComboBox.Text.Trim();
             var tableFirstRowNumber = "11";
 
             // Write the report header:
