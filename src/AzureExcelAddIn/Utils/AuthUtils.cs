@@ -5,26 +5,37 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 
 namespace ExcelAddIn1
 {
+    internal enum AzureEnvironment
+    {
+        Commercial = 0,
+        UsGov = 1,
+        China = 2,
+        Germany = 3
+    }
+
     internal static class AuthUtils
     {
         private const string RedirectUrn = "urn:ietf:wg:oauth:2.0:oob";
         private const string AzureManagementResourceUrl = "https://management.core.windows.net/";
+        private const string MoonCakeAzureManagementResourceUrl = "https://management.core.chinacloudapi.cn/";
+        private const string BlackForestAzureManagementResourceUrl = "https://management.core.cloudapi.de/";
+        private const string UsGovAzureManagementResourceUrl = "https://management.core.usgovcloudapi.net/";
         private const string PartnerServiceResourceUrl = "https://api.partnercenter.microsoft.com";
         private const string AzureAuthUrl = "https://login.microsoftonline.com";
         private const string ApplicationId = "1950a258-227b-4e31-a9cf-717495945fc2";
 
-        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi)
+        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, AzureEnvironment environment)
         {
-            return GetAuthorizationHeader(tenantId, forceReAuthentication, usageApi, null, null);
+            return GetAuthorizationHeader(tenantId, forceReAuthentication, usageApi, null, null, environment);
         }
 
-        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, string customApplicationId, string customApplicationKey)
+        public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, string customApplicationId, string customApplicationKey, AzureEnvironment environment)
         {
             var authUrl = string.Format(CultureInfo.InvariantCulture, "{0}/{1}", AzureAuthUrl, tenantId);
             var context = new AuthenticationContext(authUrl);
             var resourceUrl = usageApi == UsageApi.CloudSolutionProvider
                 ? PartnerServiceResourceUrl
-                : AzureManagementResourceUrl;
+                : GetResourceUrlByEnvironment(environment);
             var customApplicationIdSpecified = !string.IsNullOrWhiteSpace(customApplicationId);
             var applicationId = customApplicationIdSpecified ? customApplicationId : ApplicationId;
 
@@ -82,6 +93,21 @@ namespace ExcelAddIn1
             }
 
             return result.AccessToken;
+        }
+
+        private static string GetResourceUrlByEnvironment(AzureEnvironment environment)
+        {
+            switch (environment)
+            {
+                case AzureEnvironment.China:
+                    return MoonCakeAzureManagementResourceUrl;
+                case AzureEnvironment.Germany:
+                    return BlackForestAzureManagementResourceUrl;
+                case AzureEnvironment.UsGov:
+                    return UsGovAzureManagementResourceUrl;
+                default:
+                    return AzureManagementResourceUrl;
+            }
         }
     }
 }

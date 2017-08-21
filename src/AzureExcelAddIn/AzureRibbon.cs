@@ -60,7 +60,7 @@ namespace ExcelAddIn1
                 UsageApi usageApi = this.TenantTypeDropDown.SelectedItemIndex == 1
                     ? UsageApi.CloudSolutionProvider
                     : UsageApi.Standard;
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, usageApi);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, usageApi, (AzureEnvironment)Enum.Parse(typeof(AzureEnvironment), (string)this.AzureEnvironmentDropDown.SelectedItem.Tag));
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -143,7 +143,13 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard, this.ApplicationIdComboBox.Text.Trim(), this.AppKeyComboBox.Text.Trim());
+                string token = AuthUtils.GetAuthorizationHeader(
+                    tenantId, 
+                    this.ForceReAuthCheckBox.Checked, 
+                    UsageApi.Standard, 
+                    this.ApplicationIdComboBox.Text.Trim(), 
+                    this.AppKeyComboBox.Text.Trim(), 
+                    (AzureEnvironment)Enum.Parse(typeof(AzureEnvironment), (string)this.AzureEnvironmentDropDown.SelectedItem.Tag));
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -229,7 +235,13 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.CloudSolutionProvider, this.ApplicationIdComboBox.Text.Trim(), this.AppKeyComboBox.Text.Trim());
+                string token = AuthUtils.GetAuthorizationHeader(
+                    tenantId, 
+                    this.ForceReAuthCheckBox.Checked, 
+                    UsageApi.CloudSolutionProvider, 
+                    this.ApplicationIdComboBox.Text.Trim(), 
+                    this.AppKeyComboBox.Text.Trim(),
+                    (AzureEnvironment)Enum.Parse(typeof(AzureEnvironment), (string)this.AzureEnvironmentDropDown.SelectedItem.Tag));
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -387,7 +399,13 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard, null, null);
+                string token = AuthUtils.GetAuthorizationHeader(
+                    tenantId, 
+                    this.ForceReAuthCheckBox.Checked, 
+                    UsageApi.Standard, 
+                    null, 
+                    null, 
+                    (AzureEnvironment)Enum.Parse(typeof(AzureEnvironment), (string)this.AzureEnvironmentDropDown.SelectedItem.Tag));
 
                 if (string.IsNullOrWhiteSpace(token))
                 {

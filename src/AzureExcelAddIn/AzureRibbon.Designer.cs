@@ -86,6 +86,10 @@
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl50 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl51 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl52 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl53 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl54 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl55 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl56 = this.Factory.CreateRibbonDropDownItem();
             this.AzureRibbonTab = this.Factory.CreateRibbonTab();
             this.AuthenticationRibbonGroup = this.Factory.CreateRibbonGroup();
             this.GetTokenButton = this.Factory.CreateRibbonButton();
@@ -113,6 +117,7 @@
             this.FillerLabel = this.Factory.CreateRibbonLabel();
             this.HelpGroup = this.Factory.CreateRibbonGroup();
             this.UpdateAddinButton = this.Factory.CreateRibbonButton();
+            this.AzureEnvironmentDropDown = this.Factory.CreateRibbonDropDown();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
@@ -185,6 +190,7 @@
             this.BillingAPIsRibbonGroup.Items.Add(this.RateCardCurrencyComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.RateCardLocaleComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.RateCardRegionInfoComboBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.AzureEnvironmentDropDown);
             this.BillingAPIsRibbonGroup.Items.Add(this.FillerLabel);
             this.BillingAPIsRibbonGroup.Label = "Azure Usage && RateCard APIs";
             this.BillingAPIsRibbonGroup.Name = "BillingAPIsRibbonGroup";
@@ -577,6 +583,25 @@
             this.UpdateAddinButton.SuperTip = "Run the ClickOnce installer to update the add-in if a new version is available.";
             this.UpdateAddinButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.UpdateAddinButton_Click);
             // 
+            // AzureEnvironmentDropDown
+            // 
+            ribbonDropDownItemImpl53.Label = "Commercial";
+            ribbonDropDownItemImpl53.Tag = "0";
+            ribbonDropDownItemImpl54.Label = "US Gov";
+            ribbonDropDownItemImpl54.Tag = "1";
+            ribbonDropDownItemImpl55.Label = "China";
+            ribbonDropDownItemImpl55.Tag = "2";
+            ribbonDropDownItemImpl56.Label = "Germany";
+            ribbonDropDownItemImpl56.Tag = "3";
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl53);
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl54);
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl55);
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl56);
+            this.AzureEnvironmentDropDown.Label = "Environment";
+            this.AzureEnvironmentDropDown.Name = "AzureEnvironmentDropDown";
+            this.AzureEnvironmentDropDown.ScreenTip = "Environment";
+            this.AzureEnvironmentDropDown.SuperTip = "Azure environment against which to authenticate and request reports.";
+            // 
             // AzureRibbon
             // 
             this.Name = "AzureRibbon";
@@ -623,6 +648,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox PriceSheetBillingPeriodComboBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown SubscriptionTypeDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown ReportTypeDropDown;
+        internal Microsoft.Office.Tools.Ribbon.RibbonDropDown AzureEnvironmentDropDown;
     }
 
     partial class ThisRibbonCollection
