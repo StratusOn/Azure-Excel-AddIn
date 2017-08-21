@@ -245,6 +245,9 @@
     <None Include="Images\Azure Acitve Directory Access Control.png" />
     <None Include="Images\BillingHub.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Images\Update.png" />
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>

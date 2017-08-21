@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Office.Tools.Ribbon;
 using Newtonsoft.Json;
@@ -42,6 +43,7 @@ namespace ExcelAddIn1
             this.EndDateEditBox.Text = $"{today.Year}-{today.Month:0#}-{today.Day:0#}";
 
             this.HydrateFromPersistedData();
+            this.SetControlsEnableState();
         }
 
         private void GetTokenButton_Click(object sender, RibbonControlEventArgs e)
@@ -76,6 +78,60 @@ namespace ExcelAddIn1
 
         private async void GetUsageReportButton_Click(object sender, RibbonControlEventArgs e)
         {
+            string subscriptionType = this.SubscriptionTypeDropDown.SelectedItem.Tag as string;
+            string reportType = this.ReportTypeDropDown.SelectedItem.Tag as string;
+            switch (subscriptionType)
+            {
+                case "CSP":
+                    if (reportType == "Usage")
+                    {
+                        await this.GetCspUsageReportAsync();
+                    }
+                    else
+                    {
+                        await this.GetCspRateCardAsync();
+                    }
+                    break;
+                case "EA":
+                    if (reportType == "Usage")
+                    {
+                        await this.GetEaUsageReportAsync();
+                    }
+                    else
+                    {
+                        await this.GetEaRateCardAsync();
+                    }
+                    break;
+                default:
+                    if (reportType == "Usage")
+                    {
+                        await this.GetStandardUsageReportAsync();
+                    }
+                    else
+                    {
+                        await this.GetStandardRateCardAsync();
+                    }
+                    break;
+            }
+        }
+
+        private void ReportTypeDropDown_SelectionChanged(object sender, RibbonControlEventArgs e)
+        {
+            this.SetControlsEnableState();
+        }
+
+        private void SubscriptionTypeDropDown_SelectionChanged(object sender, RibbonControlEventArgs e)
+        {
+            this.SetControlsEnableState();
+        }
+
+        private void UpdateAddinButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            Process.Start(AddinInstallUrl);
+        }
+
+        private async Task GetStandardUsageReportAsync()
+        {
             if (!this.ValidateUsageReportInput(UsageApi.Standard))
             {
                 return;
@@ -92,7 +148,7 @@ namespace ExcelAddIn1
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     MessageBox.Show(
-                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials, the correct Tenant Id and Subscription Id, and make sure 'Force Re-Authentication' is checked and try again.",
+                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials and the correct Tenant Id, and make sure 'Force Re-Authentication' is checked and try again.",
                         "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
@@ -160,7 +216,7 @@ namespace ExcelAddIn1
             }
         }
 
-        private async void GetCspUsageReportButton_Click(object sender, RibbonControlEventArgs e)
+        private async Task GetCspUsageReportAsync()
         {
             if (!this.ValidateUsageReportInput(UsageApi.CloudSolutionProvider))
             {
@@ -178,7 +234,7 @@ namespace ExcelAddIn1
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     MessageBox.Show(
-                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials, the correct Tenant Id and Subscription Id, and make sure 'Force Re-Authentication' is checked and try again.",
+                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials and the correct Tenant Id, and make sure 'Force Re-Authentication' is checked and try again.",
                         "Get Usage Report (CSP)", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
@@ -247,7 +303,7 @@ namespace ExcelAddIn1
             }
         }
 
-        private async void GetEaUsageReportButton_Click(object sender, RibbonControlEventArgs e)
+        private async Task GetEaUsageReportAsync()
         {
             if (!this.ValidateUsageReportInput(UsageApi.EnterpriseAgreement))
             {
@@ -256,7 +312,7 @@ namespace ExcelAddIn1
 
             try
             {
-                Globals.ThisAddIn.Application.StatusBar = "Getting usage report (standard)...";
+                Globals.ThisAddIn.Application.StatusBar = "Getting usage report (EA)...";
 
                 var enrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim();
                 var apiKey = this.EaApiKeyComboBox.Text.Trim();
@@ -276,7 +332,7 @@ namespace ExcelAddIn1
                     if (usageAggregates == null)
                     {
                         MessageBox.Show(
-                            $"ERROR: Failed to get usage report. Verify the correct parameters were provided for Enrollment Number, API Key, Start Date, and End Date and try again.",
+                            $"ERROR: Failed to get usage report. Verify the correct parameters were provided for Enrollment Number, API Key, Start Date, and End Date (or Billing Period) and try again.",
                             "Get Usage Report (EA)", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
@@ -318,7 +374,7 @@ namespace ExcelAddIn1
             }
         }
 
-        private async void GetRateCardButton_Click(object sender, RibbonControlEventArgs e)
+        private async Task GetStandardRateCardAsync()
         {
             if (!this.ValidateUsageReportInput(UsageApi.Standard))
             {
@@ -331,12 +387,12 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
-                string token = AuthUtils.GetAuthorizationHeader(tenantId, true, UsageApi.Standard, null, null);
+                string token = AuthUtils.GetAuthorizationHeader(tenantId, this.ForceReAuthCheckBox.Checked, UsageApi.Standard, null, null);
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     MessageBox.Show(
-                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials, the correct Tenant Id and Subscription Id, and make sure 'Force Re-Authentication' is checked and try again.",
+                        $"ERROR: Failed to acquire a token. Verify you entered the right credentials and the correct Tenant Id, and make sure 'Force Re-Authentication' is checked and try again.",
                         "Get Rate Card", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
@@ -344,10 +400,10 @@ namespace ExcelAddIn1
                 Globals.ThisAddIn.Application.StatusBar = "Getting rate card (standard)...";
 
                 var subscriptionId = this.SubscriptionIdComboBox.Text.Trim();
-                var offerDurableId = "MS-AZR-0003P";
-                var currency = "USD";
-                var locale = "en-US";
-                var regionInfo = "US";
+                var offerDurableId = this.RateCardOfferDurableIdComboBox.Text.Trim();
+                var currency = this.RateCardCurrencyComboBox.Text.Trim();
+                var locale = this.RateCardLocaleComboBox.Text.Trim();
+                var regionInfo = this.RateCardRegionInfoComboBox.Text.Trim();
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
@@ -367,7 +423,8 @@ namespace ExcelAddIn1
                 currentActiveWorksheet.SetWorksheetName(UsageApi.Standard, BillingApiType.RateCard);
                 this.PrintRateCardHeader(startColumnNumber, headerRowNumber, rateCard, currentActiveWorksheet, UsageApi.Standard);
                 this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard, currentActiveWorksheet);
-                this.FormatTags(UsageApi.Standard, rowNumber, currentActiveWorksheet);
+                rowNumber += rateCard.Meters.Length;
+                this.FormatRate(UsageApi.Standard, rowNumber, currentActiveWorksheet);
             }
             catch (Exception ex)
             {
@@ -380,64 +437,14 @@ namespace ExcelAddIn1
             }
         }
 
-        private void UpdateAddinButton_Click(object sender, RibbonControlEventArgs e)
+        private async Task GetCspRateCardAsync()
         {
-            Process.Start(AddinInstallUrl);
+            MessageBox.Show("Not Implemented");
         }
 
-        private bool ValidateUsageReportInput(UsageApi usageApi)
+        private async Task GetEaRateCardAsync()
         {
-            if (string.IsNullOrWhiteSpace(this.TenantIdComboBox.Text))
-            {
-                MessageBox.Show($"ERROR: Tenant Id must be specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(this.SubscriptionIdComboBox.Text))
-            {
-                MessageBox.Show($"ERROR: Subscription Id must be specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(this.StartDateEditBox.Text))
-            {
-                MessageBox.Show($"ERROR: Report Start Date (yyyy-mm-dd) must be specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(this.EndDateEditBox.Text))
-            {
-                MessageBox.Show($"ERROR: Report End Date (yyyy-mm-dd) must be specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            if (usageApi == UsageApi.EnterpriseAgreement)
-            {
-                if (string.IsNullOrWhiteSpace(this.EnrollmentNumberComboBox.Text))
-                {
-                    MessageBox.Show($"ERROR: Enrollment Number must be specified for an EA Usage Report.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return false;
-                }
-
-                if (string.IsNullOrWhiteSpace(this.EaApiKeyComboBox.Text))
-                {
-                    MessageBox.Show($"ERROR: An API Key generated from the EA Portal must be specified for an EA Usage Report.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return false;
-                }
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(this.ApplicationIdComboBox.Text) && !string.IsNullOrWhiteSpace(this.AppKeyComboBox.Text))
-                {
-                    MessageBox.Show($"ERROR: Application Id must be specified when an Application Key is specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return false;
-                }
-            }
-
-            this.PersistData();
-            this.AddDataToCombos();
-
-            return true;
+            MessageBox.Show("Not Implemented");
         }
 
         private void FormatTags(UsageApi usageApi, int lastRowNumber, Excel.Worksheet currentActiveWorksheet)
@@ -448,10 +455,26 @@ namespace ExcelAddIn1
                     currentActiveWorksheet.get_Range($"J11:J{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
                     break;
                 case UsageApi.EnterpriseAgreement:
-                    currentActiveWorksheet.get_Range($"Q12:Q{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
+                    currentActiveWorksheet.get_Range($"Q11:Q{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
                     break;
                 default:
                     currentActiveWorksheet.get_Range($"M11:M{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
+                    break;
+            }
+        }
+
+        private void FormatRate(UsageApi usageApi, int lastRowNumber, Excel.Worksheet currentActiveWorksheet)
+        {
+            switch (usageApi)
+            {
+                case UsageApi.CloudSolutionProvider:
+                    currentActiveWorksheet.get_Range($"G11:G{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
+                    break;
+                case UsageApi.EnterpriseAgreement:
+                    currentActiveWorksheet.get_Range($"G11:G{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
+                    break;
+                default:
+                    currentActiveWorksheet.get_Range($"G11:G{lastRowNumber - 1}").Interior.ColorIndex = 19; // #FFFFCC
                     break;
             }
         }
@@ -477,7 +500,6 @@ namespace ExcelAddIn1
             if (usageApi == UsageApi.EnterpriseAgreement)
             {
                 ExcelUtils.WriteHeaderRow("A7", "B7", new[] { "Enrollment Number:", $"{tenantId}" }, currentActiveWorksheet);
-                tableFirstRowNumber = "12";
             }
 
             ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, headerRowNumber, this.GetHeaderCaptions(usageApi), currentActiveWorksheet);
@@ -500,7 +522,7 @@ namespace ExcelAddIn1
             var currency = "USD";
             var locale = "en-US";
             var regionInfo = "US";
-            var tableFirstRowNumber = "13";
+            var tableFirstRowNumber = "11";
 
             // Write the report header:
             ExcelUtils.WriteHeaderRow("A1", "B1", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
@@ -509,16 +531,17 @@ namespace ExcelAddIn1
             ExcelUtils.WriteHeaderRow("A4", "B4", new[] { "Currency:", $"{currency}" }, currentActiveWorksheet);
             ExcelUtils.WriteHeaderRow("A5", "B5", new[] { "Locale:", $"{locale}" }, currentActiveWorksheet);
             ExcelUtils.WriteHeaderRow("A6", "B6", new[] { "Region Info:", $"{regionInfo}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A7", "B7", new[] { "Meter Region:", $"{rateCard.MeterRegion}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A8", "B8", new[] { "RateCard generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow("A7", "B7", new[] { "RateCard generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
             if (rateCard.OfferTerms.Length > 0)
             {
-                ExcelUtils.WriteHeaderRow("A9", "B9", new[] { "Offer Terms Name:", $"{rateCard.OfferTerms[0].Name}" }, currentActiveWorksheet);
-                ExcelUtils.WriteHeaderRow("A10", "B10", new[] { "Offer Terms Duration:", $"{rateCard.OfferTerms[0].EffectiveDate}" }, currentActiveWorksheet);
-                tableFirstRowNumber = "15";
+                ExcelUtils.WriteHeaderRow("A8", "B8", new[] { "Offer Terms Name:", $"{rateCard.OfferTerms[0].Name}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow("A9", "B9", new[] { "Offer Terms Duration:", $"{rateCard.OfferTerms[0].EffectiveDate}" }, currentActiveWorksheet);
             }
 
             ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, headerRowNumber, this.GetRateCardHeaderCaptions(usageApi), currentActiveWorksheet);
+
+            // Format the data types of datatime and numeric columns.
+            currentActiveWorksheet.get_Range($"H{tableFirstRowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // EffectiveDate
         }
 
         private string[] GetHeaderCaptions(UsageApi usageApi)
@@ -549,7 +572,7 @@ namespace ExcelAddIn1
 
         private void PrintUsageAggregatesReport(int startColumnNumber, int rowNumber, UsageAggregates usageAggregates, int chunkNumber, Excel.Worksheet currentActiveWorksheet)
         {
-            Globals.ThisAddIn.Application.StatusBar = $"Displaying standard usage report chunk {chunkNumber}...";
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying standard usage report chunk {chunkNumber}. Please wait...";
 
             foreach (var usageAggregate in usageAggregates.value)
             {
@@ -560,7 +583,7 @@ namespace ExcelAddIn1
 
         private void PrintUsageAggregatesReportCsp(int startColumnNumber, int rowNumber, CspUsageAggregates usageAggregates, int chunkNumber, Excel.Worksheet currentActiveWorksheet)
         {
-            Globals.ThisAddIn.Application.StatusBar = $"Displaying CSP usage report chunk {chunkNumber}...";
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying CSP usage report chunk {chunkNumber}. Please wait...";
 
             foreach (var usageAggregate in usageAggregates.items)
             {
@@ -571,7 +594,7 @@ namespace ExcelAddIn1
 
         private void PrintUsageAggregatesReportEa(int startColumnNumber, int rowNumber, EaUsageAggregates usageAggregates, int chunkNumber, Excel.Worksheet currentActiveWorksheet)
         {
-            Globals.ThisAddIn.Application.StatusBar = $"Displaying EA usage report chunk {chunkNumber}...";
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying EA usage report chunk {chunkNumber}. Please wait...";
 
             foreach (var usageAggregate in usageAggregates.data)
             {
@@ -582,7 +605,7 @@ namespace ExcelAddIn1
 
         private void PrintRateCardReport(int startColumnNumber, int rowNumber, RateCard rateCard, Excel.Worksheet currentActiveWorksheet)
         {
-            Globals.ThisAddIn.Application.StatusBar = $"Displaying standard rate card...";
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying standard rate card. Please wait...";
 
             foreach (var meter in rateCard.Meters)
             {
@@ -610,7 +633,7 @@ namespace ExcelAddIn1
 
             var subscriptionIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
             subscriptionIdRibbonDropDownItem.Label = this.SubscriptionIdComboBox.Text.Trim();
-            if (this.SubscriptionIdComboBox.Items.All(item => string.Compare(item.Label, subscriptionIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0 ))
+            if (this.SubscriptionIdComboBox.Items.All(item => string.Compare(item.Label, subscriptionIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
             {
                 this.SubscriptionIdComboBox.Items.Add(subscriptionIdRibbonDropDownItem);
             }
@@ -705,6 +728,106 @@ namespace ExcelAddIn1
                     this.AppKeyComboBox.Items.Add(ribbonDropDownItem);
                 }
             }
+        }
+
+        private void SetControlsEnableState()
+        {
+            string reportType = this.ReportTypeDropDown.SelectedItem.Tag as string;
+            string subscriptionType = this.SubscriptionTypeDropDown.SelectedItem.Tag as string;
+            bool isUsageReport = reportType == "Usage";
+            bool isRateCard = reportType == "RateCard";
+            bool isStandard = subscriptionType == "Standard";
+            bool isCsp = subscriptionType == "CSP";
+            bool isEa = subscriptionType == "EA";
+
+            this.RateCardOfferDurableIdComboBox.Enabled = isRateCard && isStandard;
+            this.RateCardCurrencyComboBox.Enabled = isRateCard && (isStandard || isCsp);
+            this.RateCardLocaleComboBox.Enabled = isRateCard && (isStandard || isCsp);
+            this.RateCardRegionInfoComboBox.Enabled = isRateCard && (isStandard || isCsp);
+            this.PriceSheetBillingPeriodComboBox.Enabled = isEa;
+            this.EaApiKeyComboBox.Enabled = isEa;
+            this.ApplicationIdComboBox.Enabled = isStandard || isCsp;
+            this.AppKeyComboBox.Enabled = isStandard || isCsp;
+            this.EnrollmentNumberComboBox.Enabled = isEa;
+            this.AggregationGranularityDropDown.Enabled = isUsageReport && (isStandard || isCsp);
+            this.StartDateEditBox.Enabled = isUsageReport;
+            this.EndDateEditBox.Enabled = isUsageReport;
+            this.SubscriptionIdComboBox.Enabled = isStandard || isCsp;
+            this.TenantIdComboBox.Enabled = true;
+        }
+
+        private bool ValidateUsageReportInput(UsageApi usageApi)
+        {
+            if (string.IsNullOrWhiteSpace(this.TenantIdComboBox.Text))
+            {
+                MessageBox.Show($"ERROR: Tenant Id must be specified.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.SubscriptionIdComboBox.Text) && this.SubscriptionIdComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Subscription Id must be specified.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.StartDateEditBox.Text) && this.StartDateEditBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Report Start Date (yyyy-mm-dd) must be specified.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.EndDateEditBox.Text) && this.EndDateEditBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Report End Date (yyyy-mm-dd) must be specified.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.EnrollmentNumberComboBox.Text) && this.EnrollmentNumberComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Enrollment Number must be specified for an EA Usage Report.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.EaApiKeyComboBox.Text) && this.EaApiKeyComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: An API Key generated from the EA Portal must be specified for an EA Usage Report.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.ApplicationIdComboBox.Text) && !string.IsNullOrWhiteSpace(this.AppKeyComboBox.Text) && this.ApplicationIdComboBox.Enabled && this.AppKeyComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Application Id must be specified when an Application Key is specified.", "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.RateCardLocaleComboBox.Text) && this.RateCardLocaleComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Locale must be specified (e.g. en-US).", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.RateCardCurrencyComboBox.Text) && this.RateCardCurrencyComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Currency must be specified (e.g. USD).", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.RateCardOfferDurableIdComboBox.Text) && this.RateCardOfferDurableIdComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Offer must be specified (e.g. MS-AZR-0003P for Pay-As-You-Go).", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(this.RateCardRegionInfoComboBox.Text) && this.RateCardRegionInfoComboBox.Enabled)
+            {
+                MessageBox.Show($"ERROR: Region must be specified (e.g.: US).", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            this.PersistData();
+            this.AddDataToCombos();
+
+            return true;
         }
     }
 }

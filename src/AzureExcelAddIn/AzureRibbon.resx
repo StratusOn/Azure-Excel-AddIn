@@ -117,10 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="GetUsageReportButton.SuperTip" xml:space="preserve">
-    <value>Enter a subscription id, a tenant id, a report start date (yyyy-mm-dd), and a report end date before clicking on this button. Check the Force Re-authnetication to always get a fresh token. Select Hourly for finer usage aggregation.</value>
-  </data>
-  <data name="GetCspUsageReportButton.SuperTip" xml:space="preserve">
-    <value>Enter a subscription id, a tenant id, a report start date (yyyy-mm-dd), and a report end date before clicking on this button. Check the Force Re-authnetication to always get a fresh token. Select Hourly for finer usage aggregation.</value>
-  </data>
 </root>
