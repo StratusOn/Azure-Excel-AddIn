@@ -1,12 +1,13 @@
 ﻿using System;
-using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExcelAddIn1
 {
     public class CspUsageAggregates
     {
         public int totalCount { get; set; }
-        public Item[] items { get; set; }
+        public List<Item> items { get; set; }
         public Links links { get; set; }
         public Attributes attributes { get; set; }
     }
@@ -33,11 +34,13 @@ namespace ExcelAddIn1
         public DateTime usageStartTime { get; set; }
         public DateTime usageEndTime { get; set; }
         public Resource resource { get; set; }
-        public float quantity { get; set; }
+        public double quantity { get; set; }
         public string unit { get; set; }
-        public Infofields infoFields { get; set; }
-        public Instancedata instanceData { get; set; }
-        public Attributes1 attributes { get; set; }
+        public InfoFields infoFields { get; set; }
+        [JsonProperty("instanceData")]
+        public string instanceDataRaw { get; set; }
+        public InstanceData InstanceData => JsonConvert.DeserializeObject<InstanceData>(instanceDataRaw.Replace("\\\"", ""));
+        public Attributes attributes { get; set; }
     }
 
     public class Resource
@@ -48,22 +51,4 @@ namespace ExcelAddIn1
         public string subcategory { get; set; }
         public string region { get; set; }
     }
-
-    public class Infofields : JObject
-    {
-    }
-
-    public class Instancedata
-    {
-        public string resourceUri { get; set; }
-        public string location { get; set; }
-        public string partNumber { get; set; }
-        public string orderNumber { get; set; }
-    }
-
-    public class Attributes1
-    {
-        public string objectType { get; set; }
-    }
-
 }

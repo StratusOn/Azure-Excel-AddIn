@@ -187,13 +187,15 @@
     can be found.
   -->
   <ItemGroup>
+    <Compile Include="Model\InfoFields.cs" />
+    <Compile Include="Model\InstanceData.cs" />
+    <Compile Include="Model\MicrosoftResources.cs" />
     <Compile Include="Model\RateCard.cs" />
     <Compile Include="Utils\AuthUtils.cs" />
     <Compile Include="Utils\BillingUtils.cs" />
     <Compile Include="Model\CspUsageAggregates.cs" />
     <Compile Include="Model\EaUsageAggregates.cs" />
     <Compile Include="Utils\ExcelUtils.cs" />
-    <Compile Include="Utils\JsonUtils.cs" />
     <Compile Include="Model\PersistedData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

@@ -67,13 +67,22 @@ namespace ExcelAddIn1
             currentRow.Value2 = BillingUtils.GetLineItemFieldsEa(lineItem);
         }
 
-        public static void WriteRateCardLineItem(int startColumnNumber, int rowNumber, Meter meterItem, int numberOfColumns, Microsoft.Office.Interop.Excel.Worksheet activeWorksheet)
+        public static void WriteRateCardOfferTermLineItem(int startColumnNumber, int rowNumber, Offerterm offerTermItem, int numberOfColumns, Microsoft.Office.Interop.Excel.Worksheet activeWorksheet)
         {
             Microsoft.Office.Interop.Excel.Range c1 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber];
             Microsoft.Office.Interop.Excel.Range c2 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber + numberOfColumns - 1];
             Microsoft.Office.Interop.Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
 
-            currentRow.Value2 = BillingUtils.GetLineItemFields(meterItem);
+            currentRow.Value2 = BillingUtils.GetRateCardOfferTermLineItemFields(offerTermItem);
+        }
+
+        public static void WriteRateCardMeterLineItem(int startColumnNumber, int rowNumber, Meter meterItem, int numberOfColumns, Microsoft.Office.Interop.Excel.Worksheet activeWorksheet)
+        {
+            Microsoft.Office.Interop.Excel.Range c1 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber];
+            Microsoft.Office.Interop.Excel.Range c2 = (Microsoft.Office.Interop.Excel.Range)activeWorksheet.Cells[rowNumber, startColumnNumber + numberOfColumns - 1];
+            Microsoft.Office.Interop.Excel.Range currentRow = activeWorksheet.get_Range(c1, c2);
+
+            currentRow.Value2 = BillingUtils.GetRateCardMeterLineItemFields(meterItem);
         }
 
         public static void SetWorksheetName(this Worksheet worksheet, UsageApi usageApi, BillingApiType billingApiType)

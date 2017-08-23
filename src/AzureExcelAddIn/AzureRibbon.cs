@@ -17,11 +17,13 @@ namespace ExcelAddIn1
 
         private readonly string[] HeaderCaptions = {
             "Usage Start Time (UTC)", "Usage End Time (UTC)", "Id", "Name", "Type", "subscription Id", "Meter Id", "Meter Name",
-            "Meter Category", "Meter Sub-Category", "Quantity", "Unit", "Tags", "Info Fields (legacy format)", "Instance Data (new format)"
+            "Meter Category", "Meter Sub-Category", "Quantity", "Unit", "Tags", "Resource URI", "Location", "Order Number", "Part Number", "Additional Info",
+            "Metered Region", "Metered Service", "Metered Service Type", "Project", "Service Info1"
         };
         private readonly string[] HeaderCaptionsCsp = {
             "Usage Start Time (UTC)", "Usage End Time (UTC)", "Meter Id", "Meter Name", "Meter Category", "Meter Sub-Category", "Meter Region",
-            "Quantity", "Unit", "Tags", "Info Fields (legacy format)", "Instance Data (new format), Attributes"
+            "Quantity", "Unit", "Tags", "Resource URI", "Location", "Order Number", "Part Number", "Additional Info",
+            "Metered Region", "Metered Service", "Metered Service Type", "Project", "Service Info1", "Attributes"
         };
         private readonly string[] HeaderCaptionsEa = {
             "Usage Time (UTC)", "Account Id", "Account Name", "Product Id", "Product", "Resource Location Id", "Resource Location", "Consumed Service Id", "Consumed Service", "Department Id", "Department Name",
@@ -30,9 +32,17 @@ namespace ExcelAddIn1
             "Instance Id", "Service Info 1", "Service Info 2", "Additional Info", "Store Service Identifier", "Cost Center", "Resource Group"
         };
 
-        private readonly string[] HeaderCaptionsRateCard =
+        private readonly string[] HeaderCaptionRateCard =
         {
-            "Meter Id", "Meter Name", "Meter Category", "Meter Sub-Category", "Unit", "Meter Region", "Meter Rates", "Effective Date", "Included Quantity"
+            "Currency", "Locale", "Meter Region", "Is Tax Included", "Tags"
+        };
+        private readonly string[] HeaderCaptionRateCardOfferTerm =
+        {
+            "Name", "Credit", "Effective Date", "Excluded Meter Ids", "Tiered Discount", "Initial Discount"
+        };
+        private readonly string[] HeaderCaptionsRateCardMeter =
+        {
+            "Meter Id", "Meter Name", "Meter Category", "Meter Sub-Category", "Unit", "Meter Region", "Meter Rates", "Initial Rate", "Meter Tags", "Effective Date", "Included Quantity", "Meter Status"
         };
 
         private void AzureRibbonTab_Load(object sender, RibbonUIEventArgs e)
@@ -169,10 +179,11 @@ namespace ExcelAddIn1
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
-                int headerRowNumber = 9;
-                int rowNumber = headerRowNumber + 2;
-                Excel.Worksheet currentActiveWorksheet = null;
+                int startHeaderRowNumber = 1;
+                int rowNumber = 0;
                 int currentContinuationCount = 0;
+                Excel.Worksheet currentActiveWorksheet = null;
+
                 UsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesStandardAsync(token, subscriptionId, reportStartDate, reportEndDate, aggregationGranularity, showDetails);
 
                 do
@@ -191,11 +202,11 @@ namespace ExcelAddIn1
                         Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
                         currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
                         currentActiveWorksheet.SetWorksheetName(UsageApi.Standard, BillingApiType.Usage);
-                        this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.Standard);
+                        rowNumber = this.PrintUsageAggregatesHeader(startColumnNumber, startHeaderRowNumber, currentActiveWorksheet, UsageApi.Standard);
                     }
 
                     this.PrintUsageAggregatesReport(startColumnNumber, rowNumber, usageAggregates, currentContinuationCount, currentActiveWorksheet);
-                    rowNumber += usageAggregates.value.Length;
+                    rowNumber += usageAggregates.value.Count;
 
                     // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
                     string continuationLink = usageAggregates.nextLink;
@@ -209,7 +220,7 @@ namespace ExcelAddIn1
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
-                this.FormatTags(UsageApi.Standard, rowNumber, currentActiveWorksheet);
+                //this.FormatTags(UsageApi.Standard, rowNumber, currentActiveWorksheet);
             }
             catch (Exception ex)
             {
@@ -261,11 +272,12 @@ namespace ExcelAddIn1
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
-                int headerRowNumber = 9;
-                int rowNumber = headerRowNumber + 2;
-                Excel.Worksheet currentActiveWorksheet = null;
+                int startHeaderRowNumber = 1;
+                int rowNumber = 0;
                 int currentContinuationCount = 0;
                 int chunkSize = DefaultChunkSize;
+                Excel.Worksheet currentActiveWorksheet = null;
+
                 CspUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesCspAsync(token, subscriptionId, tenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize);
 
                 do
@@ -284,11 +296,11 @@ namespace ExcelAddIn1
                         Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
                         currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
                         currentActiveWorksheet.SetWorksheetName(UsageApi.CloudSolutionProvider, BillingApiType.Usage);
-                        this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.CloudSolutionProvider);
+                        rowNumber = this.PrintUsageAggregatesHeader(startColumnNumber, startHeaderRowNumber, currentActiveWorksheet, UsageApi.CloudSolutionProvider);
                     }
 
                     this.PrintUsageAggregatesReportCsp(startColumnNumber, rowNumber, usageAggregates, currentContinuationCount, currentActiveWorksheet);
-                    rowNumber += usageAggregates.items.Length;
+                    rowNumber += usageAggregates.items.Count;
 
                     // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
                     string continuationLink = usageAggregates.links?.self?.uri;
@@ -302,7 +314,7 @@ namespace ExcelAddIn1
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
-                this.FormatTags(UsageApi.CloudSolutionProvider, rowNumber, currentActiveWorksheet);
+                //this.FormatTags(UsageApi.CloudSolutionProvider, rowNumber, currentActiveWorksheet);
             }
             catch (Exception ex)
             {
@@ -333,10 +345,11 @@ namespace ExcelAddIn1
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
-                int headerRowNumber = 10;
-                int rowNumber = headerRowNumber + 2;
-                Excel.Worksheet currentActiveWorksheet = null;
+                int startHeaderRowNumber = 1;
+                int rowNumber = 0;
                 int currentContinuationCount = 0;
+                Excel.Worksheet currentActiveWorksheet = null;
+
                 EaUsageAggregates usageAggregates = await BillingUtils.GetUsageAggregatesEaAsync(apiKey, enrollmentNumber, reportStartDate, reportEndDate);
 
                 do
@@ -355,11 +368,11 @@ namespace ExcelAddIn1
                         Excel.Worksheet previousActiveWorksheet = Globals.ThisAddIn.Application.ActiveSheet;
                         currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(previousActiveWorksheet);
                         currentActiveWorksheet.SetWorksheetName(UsageApi.EnterpriseAgreement, BillingApiType.Usage);
-                        this.PrintUsageAggregatesHeader(startColumnNumber, headerRowNumber, currentActiveWorksheet, UsageApi.EnterpriseAgreement);
+                        rowNumber = this.PrintUsageAggregatesHeader(startColumnNumber, startHeaderRowNumber, currentActiveWorksheet, UsageApi.EnterpriseAgreement);
                     }
 
                     this.PrintUsageAggregatesReportEa(startColumnNumber, rowNumber, usageAggregates, currentContinuationCount, currentActiveWorksheet);
-                    rowNumber += usageAggregates.data.Length;
+                    rowNumber += usageAggregates.data.Count;
 
                     // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
                     string continuationLink = usageAggregates.nextLink;
@@ -373,7 +386,7 @@ namespace ExcelAddIn1
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
-                this.FormatTags(UsageApi.EnterpriseAgreement, rowNumber, currentActiveWorksheet);
+                //this.FormatTags(UsageApi.EnterpriseAgreement, rowNumber, currentActiveWorksheet);
             }
             catch (Exception ex)
             {
@@ -425,8 +438,8 @@ namespace ExcelAddIn1
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
-                int headerRowNumber = 9;
-                int rowNumber = headerRowNumber + 2;
+                int startHeaderRowNumber = 1;
+
                 RateCard rateCard = await BillingUtils.GetRateCardStandardAsync(token, subscriptionId, offerDurableId, currency, locale, regionInfo);
                 if (rateCard == null)
                 {
@@ -439,10 +452,10 @@ namespace ExcelAddIn1
                 // Add a fresh worksheet and write the results.
                 Excel.Worksheet currentActiveWorksheet = Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
                 currentActiveWorksheet.SetWorksheetName(UsageApi.Standard, BillingApiType.RateCard);
-                this.PrintRateCardHeader(startColumnNumber, headerRowNumber, rateCard, currentActiveWorksheet, UsageApi.Standard);
+                var rowNumber = this.PrintRateCardHeader(startColumnNumber, startHeaderRowNumber, rateCard, currentActiveWorksheet, UsageApi.Standard);
                 this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard, currentActiveWorksheet);
-                rowNumber += rateCard.Meters.Length;
-                this.FormatRate(UsageApi.Standard, rowNumber, currentActiveWorksheet);
+                rowNumber += rateCard.Meters.Count;
+                //this.FormatRate(UsageApi.Standard, rowNumber, currentActiveWorksheet);
             }
             catch (Exception ex)
             {
@@ -497,7 +510,7 @@ namespace ExcelAddIn1
             }
         }
 
-        private void PrintUsageAggregatesHeader(int startColumnNumber, int headerRowNumber, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
+        private int PrintUsageAggregatesHeader(int startColumnNumber, int headerRowNumber, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
         {
             Globals.ThisAddIn.Application.StatusBar = "Displaying usage report header...";
 
@@ -506,31 +519,34 @@ namespace ExcelAddIn1
             var reportStartDate = this.StartDateEditBox.Text;
             var reportEndDate = this.EndDateEditBox.Text;
             var aggregationGranularity = this.AggregationGranularityDropDown.SelectedItem.Tag;
-            var tableFirstRowNumber = "11";
 
             // Write the report header:
-            ExcelUtils.WriteHeaderRow("A1", "B1", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A2", "B2", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A3", "B3", new[] { "Report Start Date (UTC):", $"{reportStartDate}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A4", "B4", new[] { "Report End Date (UTC):", $"{reportEndDate}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A5", "B5", new[] { "Aggregation Granularity:", $"{aggregationGranularity}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A6", "B6", new[] { "Report generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
+            int rowNumber = headerRowNumber;
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report Start Date (UTC):", $"{reportStartDate}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report End Date (UTC):", $"{reportEndDate}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Aggregation Granularity:", $"{aggregationGranularity}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
             if (usageApi == UsageApi.EnterpriseAgreement)
             {
-                ExcelUtils.WriteHeaderRow("A7", "B7", new[] { "Enrollment Number:", $"{tenantId}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Enrollment Number:", $"{tenantId}" }, currentActiveWorksheet);
             }
 
-            ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, headerRowNumber, this.GetHeaderCaptions(usageApi), currentActiveWorksheet);
+            ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, rowNumber, this.GetHeaderCaptions(usageApi), currentActiveWorksheet);
 
             // Format the data types of datatime and numeric columns.
-            currentActiveWorksheet.get_Range($"A{tableFirstRowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageStartTime
+            rowNumber++; // Starting row number for the table.
+            currentActiveWorksheet.get_Range($"A{rowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageStartTime
             if (usageApi == UsageApi.Standard || usageApi == UsageApi.CloudSolutionProvider)
             {
-                currentActiveWorksheet.get_Range($"B{tableFirstRowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageEndTime
+                currentActiveWorksheet.get_Range($"B{rowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // UsageEndTime
             }
+
+            return ++rowNumber; // return the first writable row number.
         }
 
-        private void PrintRateCardHeader(int startColumnNumber, int headerRowNumber, RateCard rateCard, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
+        private int PrintRateCardHeader(int startColumnNumber, int headerRowNumber, RateCard rateCard, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
         {
             Globals.ThisAddIn.Application.StatusBar = "Displaying rate card header...";
 
@@ -540,26 +556,37 @@ namespace ExcelAddIn1
             var currency = this.RateCardCurrencyComboBox.Text.Trim();
             var locale = this.RateCardLocaleComboBox.Text.Trim();
             var regionInfo = this.RateCardRegionInfoComboBox.Text.Trim();
-            var tableFirstRowNumber = "11";
 
             // Write the report header:
-            ExcelUtils.WriteHeaderRow("A1", "B1", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A2", "B2", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A3", "B3", new[] { "Offer Durable Id:", $"{offerDurableId}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A4", "B4", new[] { "Currency:", $"{currency}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A5", "B5", new[] { "Locale:", $"{locale}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A6", "B6", new[] { "Region Info:", $"{regionInfo}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow("A7", "B7", new[] { "RateCard generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
-            if (rateCard.OfferTerms.Length > 0)
+            int rowNumber = headerRowNumber;
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Durable Id:", $"{offerDurableId}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Currency:", $"{currency}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Locale:", $"{locale}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Region Info:", $"{regionInfo}" }, currentActiveWorksheet);
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Is Tax Included:", $"{rateCard.IsTaxIncluded}" }, currentActiveWorksheet);
+            if (rateCard.Tags != null)
             {
-                ExcelUtils.WriteHeaderRow("A8", "B8", new[] { "Offer Terms Name:", $"{rateCard.OfferTerms[0].Name}" }, currentActiveWorksheet);
-                ExcelUtils.WriteHeaderRow("A9", "B9", new[] { "Offer Terms Duration:", $"{rateCard.OfferTerms[0].EffectiveDate}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "RateCard Tags:", $"{string.Join(";", rateCard.Tags)}" }, currentActiveWorksheet);
+            }
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "RateCard generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
+            if (rateCard.OfferTerms.Count > 0)
+            {
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Name:", $"{rateCard.OfferTerms[0].Name}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Duration:", $"{rateCard.OfferTerms[0].EffectiveDate}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Credit:", $"{rateCard.OfferTerms[0].Credit}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Excluded Meter Ids:", $"{string.Join(";", rateCard.OfferTerms[0].ExcludedMeterIds)}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Duration:", $"{string.Join(";", rateCard.OfferTerms[0].TieredDiscount.Select(x => x.Key + "=" + x.Value))}" }, currentActiveWorksheet);
             }
 
-            ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, headerRowNumber, this.GetRateCardHeaderCaptions(usageApi), currentActiveWorksheet);
+            ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, rowNumber, this.GetRateCardHeaderCaptions(usageApi), currentActiveWorksheet);
 
             // Format the data types of datatime and numeric columns.
-            currentActiveWorksheet.get_Range($"H{tableFirstRowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // EffectiveDate
+            rowNumber++; // Starting row number for the table.
+            currentActiveWorksheet.get_Range($"J{rowNumber}").EntireColumn.NumberFormat = "yyyy-mm-dd HH:mm:ss"; // EffectiveDate
+
+            return ++rowNumber; // return the first writable row number.
         }
 
         private string[] GetHeaderCaptions(UsageApi usageApi)
@@ -580,11 +607,11 @@ namespace ExcelAddIn1
             switch (usageApi)
             {
                 case UsageApi.CloudSolutionProvider:
-                    return this.HeaderCaptionsRateCard;
+                    return this.HeaderCaptionsRateCardMeter;
                 case UsageApi.EnterpriseAgreement:
-                    return this.HeaderCaptionsRateCard;
+                    return this.HeaderCaptionsRateCardMeter;
                 default:
-                    return this.HeaderCaptionsRateCard;
+                    return this.HeaderCaptionsRateCardMeter;
             }
         }
 
@@ -592,10 +619,14 @@ namespace ExcelAddIn1
         {
             Globals.ThisAddIn.Application.StatusBar = $"Displaying standard usage report chunk {chunkNumber}. Please wait...";
 
-            foreach (var usageAggregate in usageAggregates.value)
+            if (usageAggregates.value != null)
             {
-                ExcelUtils.WriteUsageLineItem(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptions.Length, currentActiveWorksheet);
-                rowNumber++;
+                foreach (var usageAggregate in usageAggregates.value)
+                {
+                    ExcelUtils.WriteUsageLineItem(startColumnNumber, rowNumber, usageAggregate,
+                        this.HeaderCaptions.Length, currentActiveWorksheet);
+                    rowNumber++;
+                }
             }
         }
 
@@ -603,10 +634,14 @@ namespace ExcelAddIn1
         {
             Globals.ThisAddIn.Application.StatusBar = $"Displaying CSP usage report chunk {chunkNumber}. Please wait...";
 
-            foreach (var usageAggregate in usageAggregates.items)
+            if (usageAggregates.items != null)
             {
-                ExcelUtils.WriteUsageLineItemCsp(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptionsCsp.Length, currentActiveWorksheet);
-                rowNumber++;
+                foreach (var usageAggregate in usageAggregates.items)
+                {
+                    ExcelUtils.WriteUsageLineItemCsp(startColumnNumber, rowNumber, usageAggregate,
+                        this.HeaderCaptionsCsp.Length, currentActiveWorksheet);
+                    rowNumber++;
+                }
             }
         }
 
@@ -614,10 +649,14 @@ namespace ExcelAddIn1
         {
             Globals.ThisAddIn.Application.StatusBar = $"Displaying EA usage report chunk {chunkNumber}. Please wait...";
 
-            foreach (var usageAggregate in usageAggregates.data)
+            if (usageAggregates.data != null)
             {
-                ExcelUtils.WriteUsageLineItemEa(startColumnNumber, rowNumber, usageAggregate, this.HeaderCaptionsEa.Length, currentActiveWorksheet);
-                rowNumber++;
+                foreach (var usageAggregate in usageAggregates.data)
+                {
+                    ExcelUtils.WriteUsageLineItemEa(startColumnNumber, rowNumber, usageAggregate,
+                        this.HeaderCaptionsEa.Length, currentActiveWorksheet);
+                    rowNumber++;
+                }
             }
         }
 
@@ -625,10 +664,14 @@ namespace ExcelAddIn1
         {
             Globals.ThisAddIn.Application.StatusBar = $"Displaying standard rate card. Please wait...";
 
-            foreach (var meter in rateCard.Meters)
+            if (rateCard.Meters != null)
             {
-                ExcelUtils.WriteRateCardLineItem(startColumnNumber, rowNumber, meter, this.HeaderCaptionsRateCard.Length, currentActiveWorksheet);
-                rowNumber++;
+                foreach (var meter in rateCard.Meters)
+                {
+                    ExcelUtils.WriteRateCardMeterLineItem(startColumnNumber, rowNumber, meter,
+                        this.HeaderCaptionsRateCardMeter.Length, currentActiveWorksheet);
+                    rowNumber++;
+                }
             }
         }
 

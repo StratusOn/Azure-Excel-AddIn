@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ExcelAddIn1
 {
     public class EaUsageAggregates
     {
         public string id { get; set; }
-        public Datum[] data { get; set; }
+        public List<Datum> data { get; set; }
         public string nextLink { get; set; }
     }
 
@@ -29,9 +30,9 @@ namespace ExcelAddIn1
         public string meterSubCategory { get; set; }
         public string meterRegion { get; set; }
         public string meterName { get; set; }
-        public int consumedQuantity { get; set; }
-        public int resourceRate { get; set; }
-        public int Cost { get; set; }
+        public double consumedQuantity { get; set; }
+        public double resourceRate { get; set; }
+        public double Cost { get; set; }
         public string resourceLocation { get; set; }
         public string consumedService { get; set; }
         public string instanceId { get; set; }

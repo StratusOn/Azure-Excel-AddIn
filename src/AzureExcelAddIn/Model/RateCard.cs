@@ -9,25 +9,25 @@ namespace ExcelAddIn1
 {
     public class RateCard
     {
-        public Offerterm[] OfferTerms { get; set; }
-        public Meter[] Meters { get; set; }
+        public List<Offerterm> OfferTerms { get; set; }
+        public List<Meter> Meters { get; set; }
         public string Currency { get; set; }
         public string Locale { get; set; }
         public bool IsTaxIncluded { get; set; }
         public string MeterRegion { get; set; }
-        public object[] Tags { get; set; }
+        public List<string> Tags { get; set; }
     }
 
     public class Offerterm
     {
         public string Name { get; set; }
-        public float Credit { get; set; }
-        public JObject TieredDiscount { get; set; }
-        public object[] ExcludedMeterIds { get; set; }
+        public double Credit { get; set; }
+        public IDictionary<string, double> TieredDiscount { get; set; }
+        public List<string> ExcludedMeterIds { get; set; }
         public DateTime EffectiveDate { get; set; }
     }
 
-  
+
     public class Meter
     {
         public string MeterId { get; set; }
@@ -35,10 +35,11 @@ namespace ExcelAddIn1
         public string MeterCategory { get; set; }
         public string MeterSubCategory { get; set; }
         public string Unit { get; set; }
-        public object[] MeterTags { get; set; }
+        public List<string> MeterTags { get; set; }
         public string MeterRegion { get; set; }
-        public JObject MeterRates { get; set; }
+        public IDictionary<string, double> MeterRates { get; set; }
         public DateTime EffectiveDate { get; set; }
-        public float IncludedQuantity { get; set; }
+        public double IncludedQuantity { get; set; }
+        public string MeterStatus { get; set; }
     }
 }

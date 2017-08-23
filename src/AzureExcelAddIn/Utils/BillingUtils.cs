@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -93,9 +94,58 @@ namespace ExcelAddIn1
             fields.Add(lineItem.properties.meterSubCategory);
             fields.Add(lineItem.properties.quantity);
             fields.Add(lineItem.properties.unit);
-            fields.Add(JsonUtils.ExtractTagsFromInstanceData(lineItem.properties.instanceData));
-            fields.Add(JsonUtils.ExtractInfoFields(lineItem.properties.infoFields));
-            fields.Add(lineItem.properties.instanceData);
+            
+            if (lineItem.properties.InstanceData != null)
+            {
+                if (lineItem.properties.InstanceData.MicrosoftResources.tags != null)
+                {
+                    fields.Add(string.Join(";", lineItem.properties.InstanceData.MicrosoftResources.tags.Select(x => x.Key + "=" + x.Value)));
+                }
+                else
+                {
+                    fields.Add(string.Empty);
+                }
+
+                fields.Add(lineItem.properties.InstanceData.MicrosoftResources.resourceUri);
+                fields.Add(lineItem.properties.InstanceData.MicrosoftResources.location);
+                fields.Add(lineItem.properties.InstanceData.MicrosoftResources.orderNumber);
+                fields.Add(lineItem.properties.InstanceData.MicrosoftResources.partNumber);
+
+                if (lineItem.properties.InstanceData.MicrosoftResources.additionalInfo != null)
+                {
+                    fields.Add(string.Join(";", lineItem.properties.InstanceData.MicrosoftResources.additionalInfo.Select(x => x.Key + "=" + x.Value)));
+                }
+                else
+                {
+                    fields.Add(string.Empty);
+                }
+            }
+            else
+            {
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+            }
+
+            if (lineItem.properties.infoFields != null)
+            {
+                fields.Add(lineItem.properties.infoFields.meteredRegion);
+                fields.Add(lineItem.properties.infoFields.meteredService);
+                fields.Add(lineItem.properties.infoFields.meteredServiceType);
+                fields.Add(lineItem.properties.infoFields.project);
+                fields.Add(lineItem.properties.infoFields.serviceInfo1);
+            }
+            else
+            {
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+            }
 
             return fields.ToArray();
         }
@@ -112,10 +162,60 @@ namespace ExcelAddIn1
             fields.Add(lineItem.resource.region);
             fields.Add(lineItem.quantity);
             fields.Add(lineItem.unit);
-            fields.Add(string.Empty); // Tags
-            fields.Add(JsonUtils.ExtractInfoFields(lineItem.infoFields));
-            fields.Add(lineItem.instanceData);
-            fields.Add(lineItem.attributes);
+
+            if (lineItem.InstanceData != null)
+            {
+                if (lineItem.InstanceData.MicrosoftResources.tags != null)
+                {
+                    fields.Add(string.Join(";", lineItem.InstanceData.MicrosoftResources.tags.Select(x => x.Key + "=" + x.Value)));
+                }
+                else
+                {
+                    fields.Add(string.Empty);
+                }
+
+                fields.Add(lineItem.InstanceData.MicrosoftResources.resourceUri);
+                fields.Add(lineItem.InstanceData.MicrosoftResources.location);
+                fields.Add(lineItem.InstanceData.MicrosoftResources.orderNumber);
+                fields.Add(lineItem.InstanceData.MicrosoftResources.partNumber);
+
+                if (lineItem.InstanceData.MicrosoftResources.additionalInfo != null)
+                {
+                    fields.Add(string.Join(";", lineItem.InstanceData.MicrosoftResources.additionalInfo.Select(x => x.Key + "=" + x.Value)));
+                }
+                else
+                {
+                    fields.Add(string.Empty);
+                }
+            }
+            else
+            {
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+            }
+
+            if (lineItem.infoFields != null)
+            {
+                fields.Add(lineItem.infoFields.meteredRegion);
+                fields.Add(lineItem.infoFields.meteredService);
+                fields.Add(lineItem.infoFields.meteredServiceType);
+                fields.Add(lineItem.infoFields.project);
+                fields.Add(lineItem.infoFields.serviceInfo1);
+            }
+            else
+            {
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+            }
+
+            fields.Add(lineItem.attributes.objectType);
 
             return fields.ToArray();
         }
@@ -160,19 +260,89 @@ namespace ExcelAddIn1
             return fields.ToArray();
         }
 
-        public static object[] GetLineItemFields(Meter lineItem)
+        public static object[] GetRateCardLineItemFields(RateCard lineItem)
         {
             List<object> fields = new List<object>();
-            var meterRate = ((string) ((Newtonsoft.Json.Linq.JProperty) lineItem.MeterRates.First).Value); // Value can be cast to double.
+            fields.Add(lineItem.Currency);
+            fields.Add(lineItem.Locale);
+            fields.Add(lineItem.MeterRegion);
+            fields.Add(lineItem.IsTaxIncluded);
+
+            if (lineItem.Tags != null)
+            {
+                fields.Add(string.Join(";", lineItem.Tags));
+            }
+            else
+            {
+                fields.Add(string.Empty);
+            }
+
+            return fields.ToArray();
+        }
+
+        public static object[] GetRateCardOfferTermLineItemFields(Offerterm lineItem)
+        {
+            List<object> fields = new List<object>();
+            fields.Add(lineItem.Name);
+            fields.Add(lineItem.Credit);
+            fields.Add(lineItem.EffectiveDate);
+
+            if (lineItem.ExcludedMeterIds != null)
+            {
+                fields.Add(string.Join(";", lineItem.ExcludedMeterIds));
+            }
+            else
+            {
+                fields.Add(string.Empty);
+            }
+
+            if (lineItem.TieredDiscount != null)
+            {
+                fields.Add(string.Join(";", lineItem.TieredDiscount.Select(x => x.Key + "=" + x.Value)));
+                fields.Add(lineItem.TieredDiscount.FirstOrDefault().Value);
+            }
+            else
+            {
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+            }
+
+            return fields.ToArray();
+        }
+
+        public static object[] GetRateCardMeterLineItemFields(Meter lineItem)
+        {
+            List<object> fields = new List<object>();
             fields.Add(lineItem.MeterId);
             fields.Add(lineItem.MeterName);
             fields.Add(lineItem.MeterCategory);
             fields.Add(lineItem.MeterSubCategory);
             fields.Add(lineItem.Unit);
             fields.Add(lineItem.MeterRegion);
-            fields.Add(lineItem.MeterRates.Count > 0 ? meterRate : string.Empty);
+
+            if (lineItem.MeterRates != null)
+            {
+                fields.Add(string.Join(";", lineItem.MeterRates.Select(x => x.Key + "=" + x.Value)));
+                fields.Add(lineItem.MeterRates.FirstOrDefault().Value);
+            }
+            else
+            {
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+            }
+
+            if (lineItem.MeterTags != null)
+            {
+                fields.Add(string.Join(";", lineItem.MeterTags));
+            }
+            else
+            {
+                fields.Add(string.Empty);
+            }
+
             fields.Add(lineItem.EffectiveDate);
             fields.Add(lineItem.IncludedQuantity);
+            fields.Add(lineItem.MeterStatus);
 
             return fields.ToArray();
         }
