@@ -12,10 +12,20 @@ namespace ExcelAddIn1
     {
         public static async Task<RateCard> GetRateCardStandardAsync(string authorizationToken, string subscriptionId, string offerDurableId, string currency, string locale, string regionInfo, string apiVersion = "2015-06-01-preview")
         {
-            string usageAggregatesUrl =
+            string rateCardUrl =
             $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/RateCard?api-version={apiVersion}&$filter=OfferDurableId eq '{offerDurableId}' and Currency eq '{currency}' and Locale eq '{locale}' and RegionInfo eq '{regionInfo}'";
-            string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
+            string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
             return JsonConvert.DeserializeObject<RateCard>(content);
+        }
+
+        public static async Task<CspRateCard> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo)
+        {
+            string rateCardUrl =
+                $"https://api.partnercenter.microsoft.com/v1/ratecards/azure&currency={currency}&region={regionInfo}";
+            var headers = new Dictionary<string, string>();
+            headers.Add("X-Locale", locale);
+            string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl, headers);
+            return JsonConvert.DeserializeObject<CspRateCard>(content);
         }
 
         public static async Task<UsageAggregates> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
@@ -41,13 +51,20 @@ namespace ExcelAddIn1
             return JsonConvert.DeserializeObject<EaUsageAggregates>(content);
         }
 
-        public static async Task<string> GetRestCallResultsAsync(string authorizationToken, string url)
+        public static async Task<string> GetRestCallResultsAsync(string authorizationToken, string url, IDictionary<string, string> headers = null)
         {
             HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorizationToken);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-            HttpResponseMessage response = await client.SendAsync(request);
+            if (headers != null && headers.Count > 0)
+            {
+                foreach (var header in headers)
+                {
+                    request.Headers.Add(header.Key, header.Value);
+                }
+            }
 
+            HttpResponseMessage response = await client.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
                 return await response.Content.ReadAsStringAsync();
@@ -343,6 +360,43 @@ namespace ExcelAddIn1
             fields.Add(lineItem.EffectiveDate);
             fields.Add(lineItem.IncludedQuantity);
             fields.Add(lineItem.MeterStatus);
+
+            return fields.ToArray();
+        }
+
+        public static object[] GetCspRateCardMeterLineItemFields(CspMeter lineItem)
+        {
+            List<object> fields = new List<object>();
+            fields.Add(lineItem.id);
+            fields.Add(lineItem.name);
+            fields.Add(lineItem.category);
+            fields.Add(lineItem.subcategory);
+            fields.Add(lineItem.unit);
+            fields.Add(lineItem.region);
+
+            if (lineItem.rates != null)
+            {
+                fields.Add(string.Join(";", lineItem.rates.Select(x => x.Key + "=" + x.Value)));
+                fields.Add(lineItem.rates.FirstOrDefault().Value);
+            }
+            else
+            {
+                fields.Add(string.Empty);
+                fields.Add(string.Empty);
+            }
+
+            if (lineItem.tags != null)
+            {
+                fields.Add(string.Join(";", lineItem.tags));
+            }
+            else
+            {
+                fields.Add(string.Empty);
+            }
+
+            fields.Add(lineItem.effectiveDate);
+            fields.Add(lineItem.includedQuantity);
+            fields.Add(lineItem.status);
 
             return fields.ToArray();
         }
