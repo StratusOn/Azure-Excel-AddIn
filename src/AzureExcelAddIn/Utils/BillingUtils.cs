@@ -10,12 +10,12 @@ namespace ExcelAddIn1
 {
     internal class BillingUtils
     {
-        public static async Task<RateCard> GetRateCardStandardAsync(string authorizationToken, string subscriptionId, string offerDurableId, string currency, string locale, string regionInfo, string apiVersion = "2015-06-01-preview")
+        public static async Task<Tuple<RateCard, string>> GetRateCardStandardAsync(string authorizationToken, string subscriptionId, string offerDurableId, string currency, string locale, string regionInfo, string apiVersion = "2015-06-01-preview")
         {
             string rateCardUrl =
             $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/RateCard?api-version={apiVersion}&$filter=OfferDurableId eq '{offerDurableId}' and Currency eq '{currency}' and Locale eq '{locale}' and RegionInfo eq '{regionInfo}'";
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
-            return JsonConvert.DeserializeObject<RateCard>(content);
+            return new Tuple<RateCard, string>(JsonConvert.DeserializeObject<RateCard>(content), content);
         }
 
         public static async Task<CspRateCard> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo)
@@ -111,7 +111,7 @@ namespace ExcelAddIn1
             fields.Add(lineItem.properties.meterSubCategory);
             fields.Add(lineItem.properties.quantity);
             fields.Add(lineItem.properties.unit);
-            
+
             if (lineItem.properties.InstanceData != null)
             {
                 if (lineItem.properties.InstanceData.MicrosoftResources.tags != null)

@@ -114,10 +114,11 @@
             this.RateCardCurrencyComboBox = this.Factory.CreateRibbonComboBox();
             this.RateCardLocaleComboBox = this.Factory.CreateRibbonComboBox();
             this.RateCardRegionInfoComboBox = this.Factory.CreateRibbonComboBox();
+            this.AzureEnvironmentDropDown = this.Factory.CreateRibbonDropDown();
             this.FillerLabel = this.Factory.CreateRibbonLabel();
             this.HelpGroup = this.Factory.CreateRibbonGroup();
             this.UpdateAddinButton = this.Factory.CreateRibbonButton();
-            this.AzureEnvironmentDropDown = this.Factory.CreateRibbonDropDown();
+            this.IncludeRawPayloadCheckBox = this.Factory.CreateRibbonCheckBox();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
@@ -191,6 +192,7 @@
             this.BillingAPIsRibbonGroup.Items.Add(this.RateCardLocaleComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.RateCardRegionInfoComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.AzureEnvironmentDropDown);
+            this.BillingAPIsRibbonGroup.Items.Add(this.IncludeRawPayloadCheckBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.FillerLabel);
             this.BillingAPIsRibbonGroup.Label = "Azure Usage && RateCard APIs";
             this.BillingAPIsRibbonGroup.Name = "BillingAPIsRibbonGroup";
@@ -562,6 +564,25 @@
     "s, FR for France, GB for Great Britain, or ES for Spain.";
             this.RateCardRegionInfoComboBox.Text = "US";
             // 
+            // AzureEnvironmentDropDown
+            // 
+            ribbonDropDownItemImpl53.Label = "Commercial";
+            ribbonDropDownItemImpl53.Tag = "0";
+            ribbonDropDownItemImpl54.Label = "US Gov";
+            ribbonDropDownItemImpl54.Tag = "1";
+            ribbonDropDownItemImpl55.Label = "China";
+            ribbonDropDownItemImpl55.Tag = "2";
+            ribbonDropDownItemImpl56.Label = "Germany";
+            ribbonDropDownItemImpl56.Tag = "3";
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl53);
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl54);
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl55);
+            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl56);
+            this.AzureEnvironmentDropDown.Label = "Environment";
+            this.AzureEnvironmentDropDown.Name = "AzureEnvironmentDropDown";
+            this.AzureEnvironmentDropDown.ScreenTip = "Environment";
+            this.AzureEnvironmentDropDown.SuperTip = "Azure environment against which to authenticate and request reports.";
+            // 
             // FillerLabel
             // 
             this.FillerLabel.Label = " ";
@@ -583,24 +604,13 @@
             this.UpdateAddinButton.SuperTip = "Run the ClickOnce installer to update the add-in if a new version is available.";
             this.UpdateAddinButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.UpdateAddinButton_Click);
             // 
-            // AzureEnvironmentDropDown
+            // IncludeRawPayloadCheckBox
             // 
-            ribbonDropDownItemImpl53.Label = "Commercial";
-            ribbonDropDownItemImpl53.Tag = "0";
-            ribbonDropDownItemImpl54.Label = "US Gov";
-            ribbonDropDownItemImpl54.Tag = "1";
-            ribbonDropDownItemImpl55.Label = "China";
-            ribbonDropDownItemImpl55.Tag = "2";
-            ribbonDropDownItemImpl56.Label = "Germany";
-            ribbonDropDownItemImpl56.Tag = "3";
-            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl53);
-            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl54);
-            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl55);
-            this.AzureEnvironmentDropDown.Items.Add(ribbonDropDownItemImpl56);
-            this.AzureEnvironmentDropDown.Label = "Environment";
-            this.AzureEnvironmentDropDown.Name = "AzureEnvironmentDropDown";
-            this.AzureEnvironmentDropDown.ScreenTip = "Environment";
-            this.AzureEnvironmentDropDown.SuperTip = "Azure environment against which to authenticate and request reports.";
+            this.IncludeRawPayloadCheckBox.Label = "Include Raw Payload";
+            this.IncludeRawPayloadCheckBox.Name = "IncludeRawPayloadCheckBox";
+            this.IncludeRawPayloadCheckBox.ScreenTip = "Include Raw Payload";
+            this.IncludeRawPayloadCheckBox.SuperTip = "Include the raw JSON payload in a separate worksheet. This is useful for troubles" +
+    "hooting data integrity or corrupted data issues.";
             // 
             // AzureRibbon
             // 
@@ -649,6 +659,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown SubscriptionTypeDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown ReportTypeDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown AzureEnvironmentDropDown;
+        internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox IncludeRawPayloadCheckBox;
     }
 
     partial class ThisRibbonCollection

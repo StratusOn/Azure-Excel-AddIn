@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Office.Tools.Ribbon;
@@ -49,6 +51,11 @@ namespace ExcelAddIn1
 
         private void GetTokenButton_Click(object sender, RibbonControlEventArgs e)
         {
+            if (SynchronizationContext.Current == null)
+            {
+                SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+            }
+
             var tenantId = this.AuthTenantIdEditBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(tenantId))
             {
@@ -79,6 +86,11 @@ namespace ExcelAddIn1
 
         private async void GetUsageReportButton_Click(object sender, RibbonControlEventArgs e)
         {
+            if (SynchronizationContext.Current == null)
+            {
+                SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+            }
+
             string subscriptionType = this.SubscriptionTypeDropDown.SelectedItem.Tag as string;
             string reportType = this.ReportTypeDropDown.SelectedItem.Tag as string;
             switch (subscriptionType)
@@ -133,6 +145,11 @@ namespace ExcelAddIn1
 
         private async Task GetStandardUsageReportAsync()
         {
+            if (SynchronizationContext.Current == null)
+            {
+                SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+            }
+
             if (!this.ValidateUsageReportInput(UsageApi.Standard))
             {
                 return;
@@ -145,11 +162,11 @@ namespace ExcelAddIn1
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
                 string token = AuthUtils.GetAuthorizationHeader(
-                    tenantId, 
-                    this.ForceReAuthCheckBox.Checked, 
-                    UsageApi.Standard, 
-                    this.ApplicationIdComboBox.Text.Trim(), 
-                    this.AppKeyComboBox.Text.Trim(), 
+                    tenantId,
+                    this.ForceReAuthCheckBox.Checked,
+                    UsageApi.Standard,
+                    this.ApplicationIdComboBox.Text.Trim(),
+                    this.AppKeyComboBox.Text.Trim(),
                     (AzureEnvironment)Enum.Parse(typeof(AzureEnvironment), (string)this.AzureEnvironmentDropDown.SelectedItem.Tag));
 
                 if (string.IsNullOrWhiteSpace(token))
@@ -236,10 +253,10 @@ namespace ExcelAddIn1
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
                 string token = AuthUtils.GetAuthorizationHeader(
-                    tenantId, 
-                    this.ForceReAuthCheckBox.Checked, 
-                    UsageApi.CloudSolutionProvider, 
-                    this.ApplicationIdComboBox.Text.Trim(), 
+                    tenantId,
+                    this.ForceReAuthCheckBox.Checked,
+                    UsageApi.CloudSolutionProvider,
+                    this.ApplicationIdComboBox.Text.Trim(),
                     this.AppKeyComboBox.Text.Trim(),
                     (AzureEnvironment)Enum.Parse(typeof(AzureEnvironment), (string)this.AzureEnvironmentDropDown.SelectedItem.Tag));
 
@@ -398,8 +415,8 @@ namespace ExcelAddIn1
                 Globals.ThisAddIn.Application.StatusBar = "Authenticating...";
 
                 string token = AuthUtils.GetAuthorizationHeader(
-                    tenantId, 
-                    this.ForceReAuthCheckBox.Checked, 
+                    tenantId,
+                    this.ForceReAuthCheckBox.Checked,
                     usageApi,
                     this.ApplicationIdComboBox.Text.Trim(),
                     this.AppKeyComboBox.Text.Trim(),
@@ -447,9 +464,9 @@ namespace ExcelAddIn1
                 }
                 else
                 {
-                    RateCard rateCard = await BillingUtils.GetRateCardStandardAsync(token, subscriptionId,
+                    Tuple<RateCard, string> rateCard = await BillingUtils.GetRateCardStandardAsync(token, subscriptionId,
                         offerDurableId, currency, locale, regionInfo);
-                    if (rateCard == null)
+                    if (rateCard?.Item1 == null)
                     {
                         MessageBox.Show(
                             $"ERROR: Failed to get the rate card. Verify the correct parameters were provided for Subscription Id, Offer Id, currency, locale, and region info and try again.",
@@ -457,14 +474,22 @@ namespace ExcelAddIn1
                         return;
                     }
 
+                    // Add a worksheet for raw payload.
+                    if (this.IncludeRawPayloadCheckBox.Checked && !string.IsNullOrWhiteSpace(rateCard.Item2))
+                    {
+                        Excel.Worksheet activeWorksheet =
+                            Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
+                        ShowRawPayload(FormatJson(rateCard.Item2));
+                    }
+
                     // Add a fresh worksheet and write the results.
                     Excel.Worksheet currentActiveWorksheet =
                         Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
                     currentActiveWorksheet.SetWorksheetName(usageApi, BillingApiType.RateCard);
-                    var rowNumber = this.PrintRateCardHeader(startColumnNumber, startHeaderRowNumber, rateCard,
+                    var rowNumber = this.PrintRateCardHeader(startColumnNumber, startHeaderRowNumber, rateCard.Item1,
                         currentActiveWorksheet, usageApi);
-                    this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard, currentActiveWorksheet);
-                    rowNumber += rateCard.Meters.Count;
+                    this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard.Item1, currentActiveWorksheet);
+                    rowNumber += rateCard.Item1.Meters.Count;
                 }
             }
             catch (Exception ex)
@@ -476,6 +501,20 @@ namespace ExcelAddIn1
             {
                 Globals.ThisAddIn.Application.StatusBar = "Ready";
             }
+        }
+
+        private static string FormatJson(string jsonPayload)
+        {
+            dynamic parsedJson = JsonConvert.DeserializeObject(jsonPayload);
+            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+        }
+
+        private static void ShowRawPayload(string payload)
+        {
+            string fileName = $"{new Random((int) DateTime.Now.Ticks).Next(10000000, 99999999)}.json";
+            string pathToPayload = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), fileName);
+            File.WriteAllText(pathToPayload, payload);
+            Process.Start("notepad.exe", pathToPayload);
         }
 
         private int PrintUsageAggregatesHeader(int startColumnNumber, int headerRowNumber, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
@@ -544,8 +583,24 @@ namespace ExcelAddIn1
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Name:", $"{rateCard.OfferTerms[0].Name}" }, currentActiveWorksheet);
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Duration:", $"{rateCard.OfferTerms[0].EffectiveDate}" }, currentActiveWorksheet);
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Credit:", $"{rateCard.OfferTerms[0].Credit}" }, currentActiveWorksheet);
-                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Excluded Meter Ids:", $"{string.Join(";", rateCard.OfferTerms[0].ExcludedMeterIds)}" }, currentActiveWorksheet);
-                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Duration:", $"{string.Join(";", rateCard.OfferTerms[0].TieredDiscount.Select(x => x.Key + "=" + x.Value))}" }, currentActiveWorksheet);
+                if (rateCard.OfferTerms[0].ExcludedMeterIds != null)
+                {
+                    ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Excluded Meter Ids:", $"{string.Join(";", rateCard.OfferTerms[0].ExcludedMeterIds)}" }, currentActiveWorksheet);
+                }
+                else
+                {
+                    ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Excluded Meter Ids:", string.Empty }, currentActiveWorksheet);
+                }
+
+                var tieredDiscount = rateCard.OfferTerms[0].TieredDiscount;
+                if (tieredDiscount != null)
+                {
+                    ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Duration:", $"{string.Join(";", tieredDiscount.Select(x => x.Key + "=" + x.Value))}" }, currentActiveWorksheet);
+                }
+                else
+                {
+                    ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Duration:", string.Empty }, currentActiveWorksheet);
+                }
             }
 
             ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, rowNumber, this.GetRateCardHeaderCaptions(usageApi), currentActiveWorksheet);
@@ -587,7 +642,14 @@ namespace ExcelAddIn1
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Name:", $"{rateCard.offerTerms[0].name}" }, currentActiveWorksheet);
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Offer Terms Duration:", $"{rateCard.offerTerms[0].effectiveDate}" }, currentActiveWorksheet);
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Discount:", $"{rateCard.offerTerms[0].discount}" }, currentActiveWorksheet);
-                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Excluded Meter Ids:", $"{string.Join(";", rateCard.offerTerms[0].excludedMeterIds)}" }, currentActiveWorksheet);
+                if (rateCard.offerTerms[0].excludedMeterIds != null)
+                {
+                    ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Excluded Meter Ids:", $"{string.Join(";", rateCard.offerTerms[0].excludedMeterIds)}" }, currentActiveWorksheet);
+                }
+                else
+                {
+                    ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Excluded Meter Ids:", string.Empty }, currentActiveWorksheet);
+                }
             }
 
             ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, rowNumber, this.GetRateCardHeaderCaptions(usageApi), currentActiveWorksheet);
