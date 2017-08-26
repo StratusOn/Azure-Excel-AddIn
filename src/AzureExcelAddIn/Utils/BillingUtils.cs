@@ -28,6 +28,15 @@ namespace ExcelAddIn1
             return new Tuple<CspRateCard, string>(JsonConvert.DeserializeObject<CspRateCard>(content), content);
         }
 
+        public static async Task<Tuple<PriceSheet, string>> GetPriceSheetAsync(string authorizationToken, string enrollmentNumber, string billingPeriod)
+        {
+            string rateCardUrl = string.IsNullOrWhiteSpace(billingPeriod) ?
+                $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/pricesheet" :
+                $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/billingPeriods/{billingPeriod}/pricesheet";
+            string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
+            return new Tuple<PriceSheet, string>(JsonConvert.DeserializeObject<PriceSheet>(content), content);
+        }
+
         public static async Task<Tuple<UsageAggregates, string>> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
         {
             string usageAggregatesUrl =
@@ -44,9 +53,22 @@ namespace ExcelAddIn1
             return new Tuple<CspUsageAggregates, string>(JsonConvert.DeserializeObject<CspUsageAggregates>(content), content);
         }
 
-        public static async Task<Tuple<EaUsageAggregates, string>> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate)
+        public static async Task<Tuple<EaUsageAggregates, string>> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate, string billingPeriod)
         {
-            string usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/usagedetailsbycustomdate?startTime={reportStartDate}&endTime={reportEndDate}";
+            string usageAggregatesUrl;
+            if (string.IsNullOrWhiteSpace(billingPeriod))
+            {
+                usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/usagedetailsbycustomdate?startTime={reportStartDate}&endTime={reportEndDate}";
+            }
+            else if (string.IsNullOrWhiteSpace(reportStartDate) || string.IsNullOrWhiteSpace(reportEndDate))
+            {
+                usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/{billingPeriod}/usagedetails";
+            }
+            else
+            {
+                usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/usagedetails";
+            }
+
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
             return new Tuple<EaUsageAggregates, string>(JsonConvert.DeserializeObject<EaUsageAggregates>(content), content);
         }
@@ -397,6 +419,23 @@ namespace ExcelAddIn1
             fields.Add(lineItem.effectiveDate);
             fields.Add(lineItem.includedQuantity);
             fields.Add(lineItem.status);
+
+            return fields.ToArray();
+        }
+
+        public static object[] GetPriceSheetMeterLineItemFields(PriceSheetMeter lineItem)
+        {
+            List<object> fields = new List<object>();
+            fields.Add(lineItem.id);
+            fields.Add(lineItem.billingPeriodId);
+            fields.Add(lineItem.meterId);
+            fields.Add(lineItem.meterName);
+            fields.Add(lineItem.meterRegion);
+            fields.Add(lineItem.unitOfMeasure);
+            fields.Add(lineItem.includedQuantity);
+            fields.Add(lineItem.partNumber);
+            fields.Add(lineItem.unitPrice);
+            fields.Add(lineItem.currencyCode);
 
             return fields.ToArray();
         }

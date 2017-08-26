@@ -191,6 +191,7 @@
     <Compile Include="Model\InstanceData.cs" />
     <Compile Include="Model\MicrosoftResources.cs" />
     <Compile Include="Model\CspRateCard.cs" />
+    <Compile Include="Model\PriceSheet.cs" />
     <Compile Include="Model\RateCard.cs" />
     <Compile Include="Utils\AuthUtils.cs" />
     <Compile Include="Utils\BillingUtils.cs" />

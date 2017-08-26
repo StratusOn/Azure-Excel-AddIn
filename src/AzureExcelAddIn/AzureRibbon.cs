@@ -38,6 +38,10 @@ namespace ExcelAddIn1
         {
             "Meter Id", "Meter Name", "Meter Category", "Meter Sub-Category", "Unit", "Meter Region", "Meter Rates", "Initial Rate", "Meter Tags", "Effective Date", "Included Quantity", "Meter Status"
         };
+        private readonly string[] HeaderCaptionsPriceSheetMeter =
+        {
+            "Id", "Billing Period Id", "Meter Id", "Meter Name", "Meter Region", "Unit of Measure", "Included Quantity", "Part Number", "Unit Price", "Currency Code"
+        };
 
         private void AzureRibbonTab_Load(object sender, RibbonUIEventArgs e)
         {
@@ -113,7 +117,7 @@ namespace ExcelAddIn1
                     }
                     else
                     {
-                        await this.GetRateCardAsync(UsageApi.EnterpriseAgreement);
+                        await this.GetPriceSheetAsync();
                     }
                     break;
                 default:
@@ -395,6 +399,7 @@ namespace ExcelAddIn1
                 var apiKey = this.EaApiKeyComboBox.Text.Trim();
                 var reportStartDate = this.StartDateEditBox.Text.Trim();
                 var reportEndDate = this.EndDateEditBox.Text.Trim();
+                var billingPeriod = this.PriceSheetBillingPeriodComboBox.Text.Trim();
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
@@ -405,7 +410,7 @@ namespace ExcelAddIn1
                 bool includeRawPayload = this.IncludeRawPayloadCheckBox.Checked;
                 StringBuilder payload = includeRawPayload? new StringBuilder() : null;
 
-                Tuple<EaUsageAggregates, string> usageAggregates = await BillingUtils.GetUsageAggregatesEaAsync(apiKey, enrollmentNumber, reportStartDate, reportEndDate);
+                Tuple<EaUsageAggregates, string> usageAggregates = await BillingUtils.GetUsageAggregatesEaAsync(apiKey, enrollmentNumber, reportStartDate, reportEndDate, billingPeriod);
                 
                 do
                 {
@@ -572,7 +577,61 @@ namespace ExcelAddIn1
             catch (Exception ex)
             {
                 MessageBox.Show($"ERROR: Failed to get rate card: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
-                    $"Get Rate Card {usageApi}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    $"Get Rate Card ({usageApi})", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Globals.ThisAddIn.Application.StatusBar = "Ready";
+            }
+        }
+
+        private async Task GetPriceSheetAsync()
+        {
+            if (!this.ValidateUsageReportInput(UsageApi.EnterpriseAgreement))
+            {
+                return;
+            }
+
+            try
+            {
+                Globals.ThisAddIn.Application.StatusBar = $"Getting price sheet (EA)...";
+
+                var enrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim();
+                var billingPeriod = this.PriceSheetBillingPeriodComboBox.Text.Trim();
+                var apiKey = this.EaApiKeyComboBox.Text.Trim();
+
+                // Write the report line items:
+                int startColumnNumber = 1; // A
+                int startHeaderRowNumber = 1;
+
+                Tuple<PriceSheet, string> priceSheet = await BillingUtils.GetPriceSheetAsync(apiKey, enrollmentNumber, billingPeriod);
+                if (priceSheet?.Item1 == null)
+                {
+                    MessageBox.Show(
+                        $"ERROR: Failed to get the price sheet. Verify the correct parameters were provided for enrollment number and billing period and try again.",
+                        $"Get Rate Card (EA)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Add a worksheet for raw payload.
+                if (this.IncludeRawPayloadCheckBox.Checked && !string.IsNullOrWhiteSpace(priceSheet.Item2))
+                {
+                    ShowRawPayload("pricesheet-ea-", FormatJson(priceSheet.Item2));
+                }
+
+                // Add a fresh worksheet and write the results.
+                Excel.Worksheet currentActiveWorksheet =
+                    Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
+                currentActiveWorksheet.SetWorksheetName(UsageApi.EnterpriseAgreement, BillingApiType.RateCard);
+                var rowNumber = this.PrintPriceSheetHeader(startColumnNumber, startHeaderRowNumber, priceSheet.Item1,
+                    currentActiveWorksheet, UsageApi.EnterpriseAgreement);
+                this.PrintPriceSheetReport(startColumnNumber, rowNumber, priceSheet.Item1, currentActiveWorksheet);
+                //rowNumber += priceSheet.Item1.Meters.Count;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"ERROR: Failed to get price sheet: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
+                    $"Get Rate Card (EA)", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -598,23 +657,32 @@ namespace ExcelAddIn1
         {
             Globals.ThisAddIn.Application.StatusBar = "Displaying usage report header...";
 
-            var tenantId = this.TenantIdComboBox.Text;
-            var subscriptionId = this.SubscriptionIdComboBox.Text;
-            var reportStartDate = this.StartDateEditBox.Text;
-            var reportEndDate = this.EndDateEditBox.Text;
+            var tenantId = this.TenantIdComboBox.Text.Trim();
+            var subscriptionId = this.SubscriptionIdComboBox.Text.Trim();
+            var reportStartDate = this.StartDateEditBox.Text.Trim();
+            var reportEndDate = this.EndDateEditBox.Text.Trim();
             var aggregationGranularity = this.AggregationGranularityDropDown.SelectedItem.Tag;
+            var enrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim();
+            var billingPeriod = this.PriceSheetBillingPeriodComboBox.Text.Trim();
 
             // Write the report header:
             int rowNumber = headerRowNumber;
             ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
+            if (usageApi == UsageApi.Standard || usageApi == UsageApi.CloudSolutionProvider)
+            {
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
+            }
             ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report Start Date (UTC):", $"{reportStartDate}" }, currentActiveWorksheet);
             ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report End Date (UTC):", $"{reportEndDate}" }, currentActiveWorksheet);
-            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Aggregation Granularity:", $"{aggregationGranularity}" }, currentActiveWorksheet);
+            if (usageApi == UsageApi.Standard || usageApi == UsageApi.CloudSolutionProvider)
+            {
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Aggregation Granularity:", $"{aggregationGranularity}" }, currentActiveWorksheet);
+            }
             ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report generated (UTC):", $"{DateTime.UtcNow}" }, currentActiveWorksheet);
             if (usageApi == UsageApi.EnterpriseAgreement)
             {
-                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Enrollment Number:", $"{tenantId}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Enrollment Number:", $"{enrollmentNumber}" }, currentActiveWorksheet);
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Billing Period:", $"{billingPeriod}" }, currentActiveWorksheet);
             }
 
             ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, rowNumber, this.GetHeaderCaptions(usageApi), currentActiveWorksheet);
@@ -738,6 +806,20 @@ namespace ExcelAddIn1
             return ++rowNumber; // return the first writable row number.
         }
 
+        private int PrintPriceSheetHeader(int startColumnNumber, int headerRowNumber, PriceSheet priceSheet, Excel.Worksheet currentActiveWorksheet, UsageApi usageApi)
+        {
+            Globals.ThisAddIn.Application.StatusBar = "Displaying price sheet header...";
+
+            var billingPeriod = this.PriceSheetBillingPeriodComboBox.Text.Trim();
+
+            // Write the report header:
+            int rowNumber = headerRowNumber;
+            ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Billing Period:", $"{billingPeriod}" }, currentActiveWorksheet);
+            ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, rowNumber++, this.GetRateCardHeaderCaptions(usageApi), currentActiveWorksheet);
+
+            return ++rowNumber; // return the first writable row number.
+        }
+
         private string[] GetHeaderCaptions(UsageApi usageApi)
         {
             switch (usageApi)
@@ -758,7 +840,7 @@ namespace ExcelAddIn1
                 case UsageApi.CloudSolutionProvider:
                     return this.HeaderCaptionsRateCardMeter;
                 case UsageApi.EnterpriseAgreement:
-                    return this.HeaderCaptionsRateCardMeter;
+                    return this.HeaderCaptionsPriceSheetMeter;
                 default:
                     return this.HeaderCaptionsRateCardMeter;
             }
@@ -826,7 +908,7 @@ namespace ExcelAddIn1
 
         private void PrintCspRateCardReport(int startColumnNumber, int rowNumber, CspRateCard rateCard, Excel.Worksheet currentActiveWorksheet)
         {
-            Globals.ThisAddIn.Application.StatusBar = $"Displaying standard rate card. Please wait...";
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying CSP rate card. Please wait...";
 
             if (rateCard.meters != null)
             {
@@ -834,6 +916,21 @@ namespace ExcelAddIn1
                 {
                     ExcelUtils.WriteCspRateCardMeterLineItem(startColumnNumber, rowNumber, meter,
                         this.HeaderCaptionsRateCardMeter.Length, currentActiveWorksheet);
+                    rowNumber++;
+                }
+            }
+        }
+
+        private void PrintPriceSheetReport(int startColumnNumber, int rowNumber, PriceSheet priceSheet, Excel.Worksheet currentActiveWorksheet)
+        {
+            Globals.ThisAddIn.Application.StatusBar = $"Displaying EA price sheet. Please wait...";
+
+            if (priceSheet.PriceSheetMeters != null)
+            {
+                foreach (var meter in priceSheet.PriceSheetMeters)
+                {
+                    ExcelUtils.WritePriceSheetMeterLineItem(startColumnNumber, rowNumber, meter,
+                        this.HeaderCaptionsPriceSheetMeter.Length, currentActiveWorksheet);
                     rowNumber++;
                 }
             }
