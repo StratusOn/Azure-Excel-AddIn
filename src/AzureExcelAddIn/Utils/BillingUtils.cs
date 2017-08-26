@@ -18,37 +18,37 @@ namespace ExcelAddIn1
             return new Tuple<RateCard, string>(JsonConvert.DeserializeObject<RateCard>(content), content);
         }
 
-        public static async Task<CspRateCard> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo)
+        public static async Task<Tuple<CspRateCard, string>> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo)
         {
             string rateCardUrl =
                 $"https://api.partnercenter.microsoft.com/v1/ratecards/azure&currency={currency}&region={regionInfo}";
             var headers = new Dictionary<string, string>();
             headers.Add("X-Locale", locale);
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl, headers);
-            return JsonConvert.DeserializeObject<CspRateCard>(content);
+            return new Tuple<CspRateCard, string>(JsonConvert.DeserializeObject<CspRateCard>(content), content);
         }
 
-        public static async Task<UsageAggregates> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
+        public static async Task<Tuple<UsageAggregates, string>> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
         {
             string usageAggregatesUrl =
                         $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/UsageAggregates?api-version=2015-06-01-preview&reportedStartTime={reportStartDate}&reportedEndTime={reportEndDate}&aggregationGranularity={aggregationGranularity}&showDetails={showDetails}";
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return JsonConvert.DeserializeObject<UsageAggregates>(content);
+            return new Tuple<UsageAggregates, string>(JsonConvert.DeserializeObject<UsageAggregates>(content), content);
         }
 
-        public static async Task<CspUsageAggregates> GetUsageAggregatesCspAsync(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize)
+        public static async Task<Tuple<CspUsageAggregates, string>> GetUsageAggregatesCspAsync(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize)
         {
             string usageAggregatesUrl =
                 $"https://api.partnercenter.microsoft.com/v1/customers/{customerTenantId}/subscriptions/{subscriptionId}/utilizations/azure?start_time={reportStartDate}&end_time={reportEndDate}&size={chunkSize}";
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return JsonConvert.DeserializeObject<CspUsageAggregates>(content);
+            return new Tuple<CspUsageAggregates, string>(JsonConvert.DeserializeObject<CspUsageAggregates>(content), content);
         }
 
-        public static async Task<EaUsageAggregates> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate)
+        public static async Task<Tuple<EaUsageAggregates, string>> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate)
         {
             string usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/usagedetailsbycustomdate?startTime={reportStartDate}&endTime={reportEndDate}";
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return JsonConvert.DeserializeObject<EaUsageAggregates>(content);
+            return new Tuple<EaUsageAggregates, string>(JsonConvert.DeserializeObject<EaUsageAggregates>(content), content);
         }
 
         public static async Task<string> GetRestCallResultsAsync(string authorizationToken, string url, IDictionary<string, string> headers = null)
