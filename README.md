@@ -25,13 +25,14 @@ http://billingtools.azurewebsites.net/excel/install/setup.exe
 * Price Sheet: https://docs.microsoft.com/en-us/azure/billing/billing-enterprise-api-pricesheet
 * Balance & Summary: https://docs.microsoft.com/en-us/azure/billing/billing-enterprise-api-balance-summary 
 * Marketplace Store Charge: https://docs.microsoft.com/en-us/azure/billing/billing-enterprise-api-marketplace-storecharge
-> NOTE: In order to be able to access the EA billing APIs programmatically, you must go to the EA portal, https://ea.azure.com, and generate an API key, as described on the following page:
+* Enabling API Access:
+> In order to be able to access the EA billing APIs programmatically, you must go to the EA portal, https://ea.azure.com, and generate an API key, as described on the following page:
 https://docs.microsoft.com/en-us/azure/billing/billing-enterprise-api
 
 ### Cloud Service Provider (CSP)
-* Enabling API Access: https://msdn.microsoft.com/en-us/library/partnercenter/mt709136.aspx
 * Usage: https://msdn.microsoft.com/en-us/library/partnercenter/mt791774.aspx
 * Ratecard: https://msdn.microsoft.com/en-us/library/partnercenter/mt774619.aspx
 * Invoice: https://msdn.microsoft.com/en-us/library/partnercenter/mt712733.aspx
-> NOTE: In order to be able to access the CSP billing APIs programmatically, you must go to the Partner Center portal and enable API access, as described on the following page:
-https://msdn.microsoft.com/library/partnercenter/mt709136.aspx
+* Enabling API Access:
+> In order to be able to access the CSP billing APIs programmatically, you must go to the Partner Center portal and enable API access, as described on the following page: https://msdn.microsoft.com/library/partnercenter/mt709136.aspx. Please note that bullet item #2 under "*Enable API access*" on that page incorrectly states: "*From the Dashboard menu, select Account Settings, then __API__.*" Instead, it should say: "*From the Dashboard menu, select Account settings, then __App Management__.*"
+
