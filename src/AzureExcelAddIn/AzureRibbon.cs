@@ -396,7 +396,7 @@ namespace ExcelAddIn1
                 Globals.ThisAddIn.Application.StatusBar = "Getting usage report (EA)...";
 
                 var enrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim();
-                var apiKey = this.EaApiKeyComboBox.Text.Trim();
+                var apiKey = this.EaApiKeyEditBox.Text.Trim();
                 var reportStartDate = this.StartDateEditBox.Text.Trim();
                 var reportEndDate = this.EndDateEditBox.Text.Trim();
                 var billingPeriod = this.PriceSheetBillingPeriodComboBox.Text.Trim();
@@ -598,7 +598,7 @@ namespace ExcelAddIn1
 
                 var enrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim();
                 var billingPeriod = this.PriceSheetBillingPeriodComboBox.Text.Trim();
-                var apiKey = this.EaApiKeyComboBox.Text.Trim();
+                var apiKey = this.EaApiKeyEditBox.Text.Trim();
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
@@ -943,7 +943,7 @@ namespace ExcelAddIn1
                 SubscriptionId = this.SubscriptionIdComboBox.Text.Trim(),
                 TenantId = this.TenantIdComboBox.Text.Trim(),
                 EnrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim(),
-                EaApiKey = this.EaApiKeyComboBox.Text.Trim(),
+                EaApiKey = this.EaApiKeyEditBox.Text.Trim(),
                 ApplicationId = this.ApplicationIdComboBox.Text.Trim(),
                 ApplicationKey = this.AppKeyComboBox.Text.Trim()
             });
@@ -987,13 +987,6 @@ namespace ExcelAddIn1
             {
                 this.EnrollmentNumberComboBox.Items.Add(enrollmentNumberRibbonDropDownItem);
             }
-
-            var eaApiKeyRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
-            eaApiKeyRibbonDropDownItem.Label = this.EaApiKeyComboBox.Text;
-            if (this.EaApiKeyComboBox.Items.All(item => string.Compare(item.Label, eaApiKeyRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
-            {
-                this.EaApiKeyComboBox.Items.Add(eaApiKeyRibbonDropDownItem);
-            }
         }
 
         private void HydrateFromPersistedData()
@@ -1028,10 +1021,7 @@ namespace ExcelAddIn1
 
                 if (!string.IsNullOrWhiteSpace(persistedData.EaApiKey))
                 {
-                    this.EaApiKeyComboBox.Text = persistedData.EaApiKey;
-                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
-                    ribbonDropDownItem.Label = persistedData.EaApiKey;
-                    this.EaApiKeyComboBox.Items.Add(ribbonDropDownItem);
+                    this.EaApiKeyEditBox.Text = persistedData.EaApiKey;
                 }
 
                 if (!string.IsNullOrWhiteSpace(persistedData.ApplicationId))
@@ -1067,7 +1057,7 @@ namespace ExcelAddIn1
             this.RateCardLocaleComboBox.Enabled = isRateCard && (isStandard || isCsp);
             this.RateCardRegionInfoComboBox.Enabled = isRateCard && (isStandard || isCsp);
             this.PriceSheetBillingPeriodComboBox.Enabled = isEa;
-            this.EaApiKeyComboBox.Enabled = isEa;
+            this.EaApiKeyEditBox.Enabled = isEa;
             this.ApplicationIdComboBox.Enabled = isStandard || isCsp;
             this.AppKeyComboBox.Enabled = isStandard || isCsp;
             this.EnrollmentNumberComboBox.Enabled = isEa;
@@ -1092,13 +1082,13 @@ namespace ExcelAddIn1
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(this.StartDateEditBox.Text) && this.StartDateEditBox.Enabled)
+            if (string.IsNullOrWhiteSpace(this.StartDateEditBox.Text) && this.StartDateEditBox.Enabled && (usageApi == UsageApi.CloudSolutionProvider || usageApi == UsageApi.Standard))
             {
                 MessageBox.Show($"ERROR: Report Start Date (yyyy-mm-dd) must be specified.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(this.EndDateEditBox.Text) && this.EndDateEditBox.Enabled)
+            if (string.IsNullOrWhiteSpace(this.EndDateEditBox.Text) && this.EndDateEditBox.Enabled && (usageApi == UsageApi.CloudSolutionProvider || usageApi == UsageApi.Standard))
             {
                 MessageBox.Show($"ERROR: Report End Date (yyyy-mm-dd) must be specified.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
@@ -1110,7 +1100,7 @@ namespace ExcelAddIn1
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(this.EaApiKeyComboBox.Text) && this.EaApiKeyComboBox.Enabled)
+            if (string.IsNullOrWhiteSpace(this.EaApiKeyEditBox.Text) && this.EaApiKeyEditBox.Enabled)
             {
                 MessageBox.Show($"ERROR: An API Key generated from the EA Portal must be specified for an EA Usage Report.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;

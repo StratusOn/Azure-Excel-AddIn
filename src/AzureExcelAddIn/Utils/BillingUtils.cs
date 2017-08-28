@@ -34,7 +34,10 @@ namespace ExcelAddIn1
                 $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/pricesheet" :
                 $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/billingPeriods/{billingPeriod}/pricesheet";
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
-            return new Tuple<PriceSheet, string>(JsonConvert.DeserializeObject<PriceSheet>(content), content);
+            return new Tuple<PriceSheet, string>(new PriceSheet()
+            {
+                PriceSheetMeters = JsonConvert.DeserializeObject<PriceSheetMeter[]>(content)
+            }, content);
         }
 
         public static async Task<Tuple<UsageAggregates, string>> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
@@ -56,13 +59,13 @@ namespace ExcelAddIn1
         public static async Task<Tuple<EaUsageAggregates, string>> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate, string billingPeriod)
         {
             string usageAggregatesUrl;
-            if (string.IsNullOrWhiteSpace(billingPeriod))
+            if (!string.IsNullOrWhiteSpace(billingPeriod))
+            {
+                usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/billingPeriods/{billingPeriod}/usagedetails";
+            }
+            else if (!string.IsNullOrWhiteSpace(reportStartDate) && !string.IsNullOrWhiteSpace(reportEndDate))
             {
                 usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/usagedetailsbycustomdate?startTime={reportStartDate}&endTime={reportEndDate}";
-            }
-            else if (string.IsNullOrWhiteSpace(reportStartDate) || string.IsNullOrWhiteSpace(reportEndDate))
-            {
-                usageAggregatesUrl = $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/{billingPeriod}/usagedetails";
             }
             else
             {

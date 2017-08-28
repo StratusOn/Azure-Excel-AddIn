@@ -106,7 +106,6 @@
             this.EndDateEditBox = this.Factory.CreateRibbonEditBox();
             this.AggregationGranularityDropDown = this.Factory.CreateRibbonDropDown();
             this.EnrollmentNumberComboBox = this.Factory.CreateRibbonComboBox();
-            this.EaApiKeyComboBox = this.Factory.CreateRibbonComboBox();
             this.PriceSheetBillingPeriodComboBox = this.Factory.CreateRibbonComboBox();
             this.ApplicationIdComboBox = this.Factory.CreateRibbonComboBox();
             this.AppKeyComboBox = this.Factory.CreateRibbonComboBox();
@@ -115,10 +114,11 @@
             this.RateCardLocaleComboBox = this.Factory.CreateRibbonComboBox();
             this.RateCardRegionInfoComboBox = this.Factory.CreateRibbonComboBox();
             this.AzureEnvironmentDropDown = this.Factory.CreateRibbonDropDown();
+            this.IncludeRawPayloadCheckBox = this.Factory.CreateRibbonCheckBox();
             this.FillerLabel = this.Factory.CreateRibbonLabel();
             this.HelpGroup = this.Factory.CreateRibbonGroup();
             this.UpdateAddinButton = this.Factory.CreateRibbonButton();
-            this.IncludeRawPayloadCheckBox = this.Factory.CreateRibbonCheckBox();
+            this.EaApiKeyEditBox = this.Factory.CreateRibbonEditBox();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
@@ -183,7 +183,7 @@
             this.BillingAPIsRibbonGroup.Items.Add(this.EndDateEditBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.AggregationGranularityDropDown);
             this.BillingAPIsRibbonGroup.Items.Add(this.EnrollmentNumberComboBox);
-            this.BillingAPIsRibbonGroup.Items.Add(this.EaApiKeyComboBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.EaApiKeyEditBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.PriceSheetBillingPeriodComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.ApplicationIdComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.AppKeyComboBox);
@@ -308,18 +308,9 @@
             this.EnrollmentNumberComboBox.SuperTip = "The Enrollment Number for the EA for which usage data is to be collected.";
             this.EnrollmentNumberComboBox.Text = null;
             // 
-            // EaApiKeyComboBox
-            // 
-            this.EaApiKeyComboBox.Items.Add(ribbonDropDownItemImpl13);
-            this.EaApiKeyComboBox.Label = "EA API Key";
-            this.EaApiKeyComboBox.Name = "EaApiKeyComboBox";
-            this.EaApiKeyComboBox.ScreenTip = "EA API Key";
-            this.EaApiKeyComboBox.SuperTip = "An EA API Key (generated in the EA portal, http://ea.azure.com) is required for g" +
-    "etting an EA Usage Report.";
-            this.EaApiKeyComboBox.Text = null;
-            // 
             // PriceSheetBillingPeriodComboBox
             // 
+            this.PriceSheetBillingPeriodComboBox.Items.Add(ribbonDropDownItemImpl13);
             this.PriceSheetBillingPeriodComboBox.Label = "EA Billing Period";
             this.PriceSheetBillingPeriodComboBox.Name = "PriceSheetBillingPeriodComboBox";
             this.PriceSheetBillingPeriodComboBox.ScreenTip = "EA Billing Period";
@@ -583,6 +574,14 @@
             this.AzureEnvironmentDropDown.ScreenTip = "Environment";
             this.AzureEnvironmentDropDown.SuperTip = "Azure environment against which to authenticate and request reports.";
             // 
+            // IncludeRawPayloadCheckBox
+            // 
+            this.IncludeRawPayloadCheckBox.Label = "Include Raw Payload";
+            this.IncludeRawPayloadCheckBox.Name = "IncludeRawPayloadCheckBox";
+            this.IncludeRawPayloadCheckBox.ScreenTip = "Include Raw Payload";
+            this.IncludeRawPayloadCheckBox.SuperTip = "Include the raw JSON payload in a separate worksheet. This is useful for troubles" +
+    "hooting data integrity or corrupted data issues.";
+            // 
             // FillerLabel
             // 
             this.FillerLabel.Label = " ";
@@ -604,13 +603,13 @@
             this.UpdateAddinButton.SuperTip = "Run the ClickOnce installer to update the add-in if a new version is available.";
             this.UpdateAddinButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.UpdateAddinButton_Click);
             // 
-            // IncludeRawPayloadCheckBox
+            // EaApiKeyEditBox
             // 
-            this.IncludeRawPayloadCheckBox.Label = "Include Raw Payload";
-            this.IncludeRawPayloadCheckBox.Name = "IncludeRawPayloadCheckBox";
-            this.IncludeRawPayloadCheckBox.ScreenTip = "Include Raw Payload";
-            this.IncludeRawPayloadCheckBox.SuperTip = "Include the raw JSON payload in a separate worksheet. This is useful for troubles" +
-    "hooting data integrity or corrupted data issues.";
+            this.EaApiKeyEditBox.Label = "EA API Key";
+            this.EaApiKeyEditBox.Name = "EaApiKeyEditBox";
+            this.EaApiKeyEditBox.ScreenTip = "EA API Key";
+            this.EaApiKeyEditBox.SuperTip = "An EA API Key (generated in the EA portal, http://ea.azure.com) is required for g" +
+    "etting an EA Usage Report.";
             // 
             // AzureRibbon
             // 
@@ -643,7 +642,6 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GetTokenButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox SubscriptionIdComboBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox TenantIdComboBox;
-        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox EaApiKeyComboBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox EnrollmentNumberComboBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown TenantTypeDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup HelpGroup;
@@ -660,6 +658,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown ReportTypeDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown AzureEnvironmentDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox IncludeRawPayloadCheckBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonEditBox EaApiKeyEditBox;
     }
 
     partial class ThisRibbonCollection

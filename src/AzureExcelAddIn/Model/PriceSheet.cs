@@ -13,7 +13,7 @@
         public string meterName { get; set; }
         public string meterRegion { get; set; }
         public string unitOfMeasure { get; set; }
-        public int includedQuantity { get; set; }
+        public double includedQuantity { get; set; }
         public string partNumber { get; set; }
         public double unitPrice { get; set; }
         public string currencyCode { get; set; }
