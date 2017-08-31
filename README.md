@@ -1,5 +1,5 @@
 # Azure Excel Add-in
-An Excel add-in for accessing Azure functions like usage aggregation reports (consumption) and rate card for standard Azure accounts, Enterprise Agreement (EA) accounts, and Cloud Service Provider (CSP) accounts.
+An Excel add-in for accessing Azure functions like usage aggregation reports (consumption) and rate card for standard Azure accounts, [Enterprise Agreement](https://www.microsoft.com/en-us/licensing/licensing-programs/enterprise.aspx) (EA) accounts, and [Cloud Solution Provider](https://partner.microsoft.com/en-US/cloud-solution-provider) (CSP) accounts.
 
 The add-in can be installed from the following location (ClickOnce installer updated by a CI build):
 http://billingtools.azurewebsites.net/excel/install/setup.exe
@@ -29,7 +29,7 @@ http://billingtools.azurewebsites.net/excel/install/setup.exe
 > In order to be able to access the EA billing APIs programmatically, you must go to the EA portal, https://ea.azure.com, and generate an API key, as described on the following page:
 https://docs.microsoft.com/en-us/azure/billing/billing-enterprise-api
 
-### Cloud Service Provider (CSP)
+### Cloud Solution Provider (CSP)
 * Usage: https://msdn.microsoft.com/en-us/library/partnercenter/mt791774.aspx
 * Ratecard: https://msdn.microsoft.com/en-us/library/partnercenter/mt774619.aspx
 * Invoice: https://msdn.microsoft.com/en-us/library/partnercenter/mt712733.aspx
