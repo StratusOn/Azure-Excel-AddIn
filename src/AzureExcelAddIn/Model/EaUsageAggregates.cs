@@ -12,15 +12,15 @@ namespace ExcelAddIn1
 
     public class Datum
     {
-        public int accountId { get; set; }
-        public int productId { get; set; }
-        public int resourceLocationId { get; set; }
-        public int consumedServiceId { get; set; }
-        public int departmentId { get; set; }
+        public long accountId { get; set; }
+        public long productId { get; set; }
+        public long resourceLocationId { get; set; }
+        public long consumedServiceId { get; set; }
+        public long departmentId { get; set; }
         public string accountOwnerEmail { get; set; }
         public string accountName { get; set; }
         public string serviceAdministratorId { get; set; }
-        public int subscriptionId { get; set; }
+        public long subscriptionId { get; set; }
         public string subscriptionGuid { get; set; }
         public string subscriptionName { get; set; }
         public DateTime date { get; set; }
