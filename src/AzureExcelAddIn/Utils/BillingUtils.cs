@@ -10,53 +10,56 @@ namespace ExcelAddIn1
 {
     internal class BillingUtils
     {
-        public static async Task<Tuple<RateCard, string>> GetRateCardStandardAsync(string authorizationToken, string subscriptionId, string offerDurableId, string currency, string locale, string regionInfo, string apiVersion = "2015-06-01-preview")
+        public static async Task<Tuple<Lazy<RateCard>, string>> GetRateCardStandardAsync(string authorizationToken, string subscriptionId, string offerDurableId, string currency, string locale, string regionInfo, string apiVersion = "2015-06-01-preview")
         {
             string rateCardUrl =
             $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/RateCard?api-version={apiVersion}&$filter=OfferDurableId eq '{offerDurableId}' and Currency eq '{currency}' and Locale eq '{locale}' and RegionInfo eq '{regionInfo}'";
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
-            return new Tuple<RateCard, string>(JsonConvert.DeserializeObject<RateCard>(content), content);
+            return new Tuple<Lazy<RateCard>, string>(new Lazy<RateCard>(() => { return JsonConvert.DeserializeObject<RateCard>(content); }), content);
         }
 
-        public static async Task<Tuple<CspRateCard, string>> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo)
+        public static async Task<Tuple<Lazy<CspRateCard>, string>> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo)
         {
             string rateCardUrl =
                 $"https://api.partnercenter.microsoft.com/v1/ratecards/azure&currency={currency}&region={regionInfo}";
             var headers = new Dictionary<string, string>();
             headers.Add("X-Locale", locale);
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl, headers);
-            return new Tuple<CspRateCard, string>(JsonConvert.DeserializeObject<CspRateCard>(content), content);
+            return new Tuple<Lazy<CspRateCard>, string>(new Lazy<CspRateCard>(() => { return JsonConvert.DeserializeObject<CspRateCard>(content); }), content);
         }
 
-        public static async Task<Tuple<PriceSheet, string>> GetPriceSheetAsync(string authorizationToken, string enrollmentNumber, string billingPeriod)
+        public static async Task<Tuple<Lazy<PriceSheet>, string>> GetPriceSheetAsync(string authorizationToken, string enrollmentNumber, string billingPeriod)
         {
             string rateCardUrl = string.IsNullOrWhiteSpace(billingPeriod) ?
                 $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/pricesheet" :
                 $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/billingPeriods/{billingPeriod}/pricesheet";
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
-            return new Tuple<PriceSheet, string>(new PriceSheet()
+            return new Tuple<Lazy<PriceSheet>, string>(new Lazy<PriceSheet>(() =>
             {
-                PriceSheetMeters = JsonConvert.DeserializeObject<PriceSheetMeter[]>(content)
-            }, content);
+                return new PriceSheet()
+                {
+                    PriceSheetMeters = JsonConvert.DeserializeObject<PriceSheetMeter[]>(content)
+                };
+            }), content);
         }
 
-        public static async Task<Tuple<UsageAggregates, string>> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
+        public static async Task<Tuple<Lazy<UsageAggregates>, string>> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
         {
             string usageAggregatesUrl =
                         $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/UsageAggregates?api-version=2015-06-01-preview&reportedStartTime={reportStartDate}&reportedEndTime={reportEndDate}&aggregationGranularity={aggregationGranularity}&showDetails={showDetails}";
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return new Tuple<UsageAggregates, string>(JsonConvert.DeserializeObject<UsageAggregates>(content), content);
+            return new Tuple<Lazy<UsageAggregates>, string>(new Lazy<UsageAggregates>(() => { return JsonConvert.DeserializeObject<UsageAggregates>(content); }), content);
         }
 
-        public static async Task<Tuple<CspUsageAggregates, string>> GetUsageAggregatesCspAsync(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize)
+        public static async Task<Tuple<Lazy<CspUsageAggregates>, string>> GetUsageAggregatesCspAsync(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize)
         {
             string usageAggregatesUrl =
                 $"https://api.partnercenter.microsoft.com/v1/customers/{customerTenantId}/subscriptions/{subscriptionId}/utilizations/azure?start_time={reportStartDate}&end_time={reportEndDate}&size={chunkSize}";
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return new Tuple<CspUsageAggregates, string>(JsonConvert.DeserializeObject<CspUsageAggregates>(content), content);
+            return new Tuple<Lazy<CspUsageAggregates>, string>(new Lazy<CspUsageAggregates>(() => { return JsonConvert.DeserializeObject<CspUsageAggregates>(content); }), content);
         }
 
-        public static async Task<Tuple<EaUsageAggregates, string>> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate, string billingPeriod)
+        public static async Task<Tuple<Lazy<EaUsageAggregates>, string>> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate, string billingPeriod)
         {
             string usageAggregatesUrl;
             if (!string.IsNullOrWhiteSpace(billingPeriod))
@@ -73,7 +76,7 @@ namespace ExcelAddIn1
             }
 
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return new Tuple<EaUsageAggregates, string>(JsonConvert.DeserializeObject<EaUsageAggregates>(content), content);
+            return new Tuple<Lazy<EaUsageAggregates>, string>(new Lazy<EaUsageAggregates>(() => { return JsonConvert.DeserializeObject<EaUsageAggregates>(content); }), content);
         }
 
         public static async Task<string> GetRestCallResultsAsync(string authorizationToken, string url, IDictionary<string, string> headers = null)

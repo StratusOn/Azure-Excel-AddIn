@@ -161,6 +161,9 @@ namespace ExcelAddIn1
             }
 
             var tenantId = this.TenantIdComboBox.Text.Trim();
+            bool includeRawPayload = this.IncludeRawPayloadCheckBox.Checked;
+            StringBuilder payload = includeRawPayload ? new StringBuilder() : null;
+            string currentChunkContent = null;
 
             try
             {
@@ -196,10 +199,8 @@ namespace ExcelAddIn1
                 int rowNumber = 0;
                 int currentContinuationCount = 0;
                 Excel.Worksheet currentActiveWorksheet = null;
-                bool includeRawPayload = this.IncludeRawPayloadCheckBox.Checked;
-                StringBuilder payload = includeRawPayload ? new StringBuilder() : null;
 
-                Tuple<UsageAggregates, string> usageAggregates = await BillingUtils.GetUsageAggregatesStandardAsync(token, subscriptionId, reportStartDate, reportEndDate, aggregationGranularity, showDetails);
+                var usageAggregates = await BillingUtils.GetUsageAggregatesStandardAsync(token, subscriptionId, reportStartDate, reportEndDate, aggregationGranularity, showDetails);
 
                 do
                 {
@@ -225,16 +226,17 @@ namespace ExcelAddIn1
                         }
                     }
 
-                    this.PrintUsageAggregatesReport(startColumnNumber, rowNumber, usageAggregates.Item1, currentContinuationCount, currentActiveWorksheet);
-                    rowNumber += usageAggregates.Item1.value.Count;
+                    currentChunkContent = usageAggregates.Item2;
+                    this.PrintUsageAggregatesReport(startColumnNumber, rowNumber, usageAggregates.Item1.Value, currentContinuationCount, currentActiveWorksheet);
+                    rowNumber += usageAggregates.Item1.Value.value.Count;
 
                     if (includeRawPayload)
                     {
-                        payload.Append(usageAggregates.Item2);
+                        payload.Append(currentChunkContent);
                     }
 
                     // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
-                    string continuationLink = usageAggregates.Item1.nextLink;
+                    string continuationLink = usageAggregates.Item1.Value.nextLink;
                     if (string.IsNullOrWhiteSpace(continuationLink))
                     {
                         break;
@@ -246,7 +248,7 @@ namespace ExcelAddIn1
                     }
 
                     string content = await BillingUtils.GetRestCallResultsAsync(token, continuationLink);
-                    usageAggregates = new Tuple<UsageAggregates, string>(JsonConvert.DeserializeObject<UsageAggregates>(content), content);
+                    usageAggregates = new Tuple<Lazy<UsageAggregates>, string>(new Lazy<UsageAggregates>(() => { return JsonConvert.DeserializeObject<UsageAggregates>(content); }), content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
@@ -259,6 +261,13 @@ namespace ExcelAddIn1
             }
             catch (Exception ex)
             {
+                if (includeRawPayload)
+                {
+                    payload.Append(currentChunkContent);
+                    payload.Append("]}");
+                    ShowRawPayload("usage-std-", FormatJson(payload.ToString()));
+                }
+
                 MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
                     "Get Usage Report", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -276,6 +285,9 @@ namespace ExcelAddIn1
             }
 
             var tenantId = this.TenantIdComboBox.Text.Trim();
+            bool includeRawPayload = this.IncludeRawPayloadCheckBox.Checked;
+            StringBuilder payload = includeRawPayload ? new StringBuilder() : null;
+            string currentChunkContent = null;
 
             try
             {
@@ -312,10 +324,8 @@ namespace ExcelAddIn1
                 int currentContinuationCount = 0;
                 int chunkSize = DefaultChunkSize;
                 Excel.Worksheet currentActiveWorksheet = null;
-                bool includeRawPayload = this.IncludeRawPayloadCheckBox.Checked;
-                StringBuilder payload = includeRawPayload ? new StringBuilder() : null;
 
-                Tuple<CspUsageAggregates, string> usageAggregates = await BillingUtils.GetUsageAggregatesCspAsync(token, subscriptionId, tenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize);
+                var usageAggregates = await BillingUtils.GetUsageAggregatesCspAsync(token, subscriptionId, tenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize);
 
                 do
                 {
@@ -341,16 +351,17 @@ namespace ExcelAddIn1
                         }
                     }
 
-                    this.PrintUsageAggregatesReportCsp(startColumnNumber, rowNumber, usageAggregates.Item1, currentContinuationCount, currentActiveWorksheet);
-                    rowNumber += usageAggregates.Item1.items.Count;
+                    currentChunkContent = usageAggregates.Item2;
+                    this.PrintUsageAggregatesReportCsp(startColumnNumber, rowNumber, usageAggregates.Item1.Value, currentContinuationCount, currentActiveWorksheet);
+                    rowNumber += usageAggregates.Item1.Value.items.Count;
 
                     if (includeRawPayload)
                     {
-                        payload.Append(usageAggregates.Item2);
+                        payload.Append(currentChunkContent);
                     }
 
                     // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
-                    string continuationLink = usageAggregates.Item1.links?.self?.uri;
+                    string continuationLink = usageAggregates.Item1.Value.links?.self?.uri;
                     if (string.IsNullOrWhiteSpace(continuationLink))
                     {
                         break;
@@ -362,7 +373,7 @@ namespace ExcelAddIn1
                     }
 
                     string content = await BillingUtils.GetRestCallResultsAsync(token, continuationLink);
-                    usageAggregates = new Tuple<CspUsageAggregates, string>(JsonConvert.DeserializeObject<CspUsageAggregates>(content), content);
+                    usageAggregates = new Tuple<Lazy<CspUsageAggregates>, string>(new Lazy<CspUsageAggregates>(() => { return JsonConvert.DeserializeObject<CspUsageAggregates>(content); }), content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
@@ -375,6 +386,13 @@ namespace ExcelAddIn1
             }
             catch (Exception ex)
             {
+                if (includeRawPayload)
+                {
+                    payload.Append(currentChunkContent);
+                    payload.Append("]}");
+                    ShowRawPayload("usage-csp-", FormatJson(payload.ToString()));
+                }
+
                 MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
                     "Get Usage Report (CSP)", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -390,6 +408,10 @@ namespace ExcelAddIn1
             {
                 return;
             }
+
+            bool includeRawPayload = this.IncludeRawPayloadCheckBox.Checked;
+            StringBuilder payload = includeRawPayload ? new StringBuilder() : null;
+            string currentChunkContent = null;
 
             try
             {
@@ -407,10 +429,8 @@ namespace ExcelAddIn1
                 int rowNumber = 0;
                 int currentContinuationCount = 0;
                 Excel.Worksheet currentActiveWorksheet = null;
-                bool includeRawPayload = this.IncludeRawPayloadCheckBox.Checked;
-                StringBuilder payload = includeRawPayload? new StringBuilder() : null;
 
-                Tuple<EaUsageAggregates, string> usageAggregates = await BillingUtils.GetUsageAggregatesEaAsync(apiKey, enrollmentNumber, reportStartDate, reportEndDate, billingPeriod);
+                var usageAggregates = await BillingUtils.GetUsageAggregatesEaAsync(apiKey, enrollmentNumber, reportStartDate, reportEndDate, billingPeriod);
                 
                 do
                 {
@@ -436,16 +456,17 @@ namespace ExcelAddIn1
                         }
                     }
 
-                    this.PrintUsageAggregatesReportEa(startColumnNumber, rowNumber, usageAggregates.Item1, currentContinuationCount, currentActiveWorksheet);
-                    rowNumber += usageAggregates.Item1.data.Count;
+                    currentChunkContent = usageAggregates.Item2;
+                    this.PrintUsageAggregatesReportEa(startColumnNumber, rowNumber, usageAggregates.Item1.Value, currentContinuationCount, currentActiveWorksheet);
+                    rowNumber += usageAggregates.Item1.Value.data.Count;
 
                     if (includeRawPayload)
                     {
-                        payload.Append(usageAggregates.Item2);
+                        payload.Append(currentChunkContent);
                     }
 
                     // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
-                    string continuationLink = usageAggregates.Item1.nextLink;
+                    string continuationLink = usageAggregates.Item1.Value.nextLink;
                     if (string.IsNullOrWhiteSpace(continuationLink))
                     {
                         break;
@@ -457,7 +478,7 @@ namespace ExcelAddIn1
                     }
 
                     string content = await BillingUtils.GetRestCallResultsAsync(apiKey, continuationLink);
-                    usageAggregates = new Tuple<EaUsageAggregates, string>(JsonConvert.DeserializeObject<EaUsageAggregates>(content), content);
+                    usageAggregates = new Tuple<Lazy<EaUsageAggregates>, string>(new Lazy<EaUsageAggregates>(() => { return JsonConvert.DeserializeObject<EaUsageAggregates>(content); }), content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
@@ -470,6 +491,14 @@ namespace ExcelAddIn1
             }
             catch (Exception ex)
             {
+                // Add a worksheet for raw payload.
+                if (includeRawPayload)
+                {
+                    payload.Append(currentChunkContent);
+                    payload.Append("]}");
+                    ShowRawPayload("usage-ea-", FormatJson(payload.ToString()));
+                }
+
                 MessageBox.Show($"ERROR: Failed to get usage report: {ex.Message}\r\n\r\n\r\n{ex.StackTrace}\r\n",
                     "Get Usage Report (EA)", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -522,7 +551,7 @@ namespace ExcelAddIn1
 
                 if (usageApi == UsageApi.CloudSolutionProvider)
                 {
-                    Tuple<CspRateCard, string> rateCard = await BillingUtils.GetRateCardCspAsync(token, currency, locale, regionInfo);
+                    var rateCard = await BillingUtils.GetRateCardCspAsync(token, currency, locale, regionInfo);
                     if (rateCard == null)
                     {
                         MessageBox.Show(
@@ -541,15 +570,14 @@ namespace ExcelAddIn1
                     Excel.Worksheet currentActiveWorksheet =
                         Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
                     currentActiveWorksheet.SetWorksheetName(usageApi, BillingApiType.RateCard);
-                    var rowNumber = this.PrintCspRateCardHeader(startColumnNumber, startHeaderRowNumber, rateCard.Item1,
+                    var rowNumber = this.PrintCspRateCardHeader(startColumnNumber, startHeaderRowNumber, rateCard.Item1.Value,
                         currentActiveWorksheet, usageApi);
-                    this.PrintCspRateCardReport(startColumnNumber, rowNumber, rateCard.Item1, currentActiveWorksheet);
+                    this.PrintCspRateCardReport(startColumnNumber, rowNumber, rateCard.Item1.Value, currentActiveWorksheet);
                     //rowNumber += rateCard.meters.Count;
                 }
                 else
                 {
-                    Tuple<RateCard, string> rateCard = await BillingUtils.GetRateCardStandardAsync(token, subscriptionId,
-                        offerDurableId, currency, locale, regionInfo);
+                    var rateCard = await BillingUtils.GetRateCardStandardAsync(token, subscriptionId, offerDurableId, currency, locale, regionInfo);
                     if (rateCard?.Item1 == null)
                     {
                         MessageBox.Show(
@@ -568,9 +596,9 @@ namespace ExcelAddIn1
                     Excel.Worksheet currentActiveWorksheet =
                         Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
                     currentActiveWorksheet.SetWorksheetName(usageApi, BillingApiType.RateCard);
-                    var rowNumber = this.PrintRateCardHeader(startColumnNumber, startHeaderRowNumber, rateCard.Item1,
+                    var rowNumber = this.PrintRateCardHeader(startColumnNumber, startHeaderRowNumber, rateCard.Item1.Value,
                         currentActiveWorksheet, usageApi);
-                    this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard.Item1, currentActiveWorksheet);
+                    this.PrintRateCardReport(startColumnNumber, rowNumber, rateCard.Item1.Value, currentActiveWorksheet);
                     //rowNumber += rateCard.Item1.Meters.Count;
                 }
             }
@@ -604,7 +632,7 @@ namespace ExcelAddIn1
                 int startColumnNumber = 1; // A
                 int startHeaderRowNumber = 1;
 
-                Tuple<PriceSheet, string> priceSheet = await BillingUtils.GetPriceSheetAsync(apiKey, enrollmentNumber, billingPeriod);
+                var priceSheet = await BillingUtils.GetPriceSheetAsync(apiKey, enrollmentNumber, billingPeriod);
                 if (priceSheet?.Item1 == null)
                 {
                     MessageBox.Show(
@@ -623,9 +651,9 @@ namespace ExcelAddIn1
                 Excel.Worksheet currentActiveWorksheet =
                     Globals.ThisAddIn.Application.Worksheets.Add(Globals.ThisAddIn.Application.ActiveSheet);
                 currentActiveWorksheet.SetWorksheetName(UsageApi.EnterpriseAgreement, BillingApiType.RateCard);
-                var rowNumber = this.PrintPriceSheetHeader(startColumnNumber, startHeaderRowNumber, priceSheet.Item1,
+                var rowNumber = this.PrintPriceSheetHeader(startColumnNumber, startHeaderRowNumber, priceSheet.Item1.Value,
                     currentActiveWorksheet, UsageApi.EnterpriseAgreement);
-                this.PrintPriceSheetReport(startColumnNumber, rowNumber, priceSheet.Item1, currentActiveWorksheet);
+                this.PrintPriceSheetReport(startColumnNumber, rowNumber, priceSheet.Item1.Value, currentActiveWorksheet);
                 //rowNumber += priceSheet.Item1.Meters.Count;
             }
             catch (Exception ex)
