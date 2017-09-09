@@ -261,9 +261,9 @@ namespace ExcelAddIn1
             }
             catch (Exception ex)
             {
-                if (includeRawPayload)
+                if (includeRawPayload && payload.Length > 0)
                 {
-                    payload.Append(currentChunkContent);
+                    payload.Append(currentChunkContent ?? string.Empty);
                     payload.Append("]}");
                     ShowRawPayload("usage-std-", FormatJson(payload.ToString()));
                 }
@@ -386,9 +386,9 @@ namespace ExcelAddIn1
             }
             catch (Exception ex)
             {
-                if (includeRawPayload)
+                if (includeRawPayload && payload.Length > 0)
                 {
-                    payload.Append(currentChunkContent);
+                    payload.Append(currentChunkContent ?? string.Empty);
                     payload.Append("]}");
                     ShowRawPayload("usage-csp-", FormatJson(payload.ToString()));
                 }
@@ -431,7 +431,7 @@ namespace ExcelAddIn1
                 Excel.Worksheet currentActiveWorksheet = null;
 
                 var usageAggregates = await BillingUtils.GetUsageAggregatesEaAsync(apiKey, enrollmentNumber, reportStartDate, reportEndDate, billingPeriod);
-                
+
                 do
                 {
                     if (usageAggregates == null)
@@ -492,9 +492,9 @@ namespace ExcelAddIn1
             catch (Exception ex)
             {
                 // Add a worksheet for raw payload.
-                if (includeRawPayload)
+                if (includeRawPayload && payload.Length > 0)
                 {
-                    payload.Append(currentChunkContent);
+                    payload.Append(currentChunkContent ?? string.Empty);
                     payload.Append("]}");
                     ShowRawPayload("usage-ea-", FormatJson(payload.ToString()));
                 }
@@ -675,7 +675,7 @@ namespace ExcelAddIn1
 
         private static void ShowRawPayload(string prefix, string payload)
         {
-            string fileName = $"{prefix}{new Random((int) DateTime.Now.Ticks).Next(10000000, 99999999)}.json";
+            string fileName = $"{prefix}{new Random((int)DateTime.Now.Ticks).Next(10000000, 99999999)}.json";
             string pathToPayload = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), fileName);
             File.WriteAllText(pathToPayload, payload);
             Process.Start("notepad.exe", pathToPayload);

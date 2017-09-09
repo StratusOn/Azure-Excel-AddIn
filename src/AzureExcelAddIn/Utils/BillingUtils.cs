@@ -46,7 +46,7 @@ namespace ExcelAddIn1
         public static async Task<Tuple<Lazy<UsageAggregates>, string>> GetUsageAggregatesStandardAsync(string authorizationToken, string subscriptionId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails)
         {
             string usageAggregatesUrl =
-                        $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/UsageAggregates?api-version=2015-06-01-preview&reportedStartTime={reportStartDate}&reportedEndTime={reportEndDate}&aggregationGranularity={aggregationGranularity}&showDetails={showDetails}";
+                        $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/UsageAggregates?api-version=2015-06-01-preview&reportedStartTime={CreateStartTime(reportStartDate)}&reportedEndTime={CreateEndTime(reportEndDate)}&aggregationGranularity={aggregationGranularity}&showDetails={showDetails}";
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
             return new Tuple<Lazy<UsageAggregates>, string>(new Lazy<UsageAggregates>(() => { return JsonConvert.DeserializeObject<UsageAggregates>(content); }), content);
         }
