@@ -38,6 +38,12 @@ This functionality requires specifying the Tenant Id of the account and choosing
 
 ![Getting an Authentication Token](images/ExcelAddin-GetToken.png)
 
+>
+> **How To Get Your AAD Tenant ID:**
+>
+> The following [page](https://support.office.com/en-us/article/Find-your-Office-365-tenant-ID-6891b561-a52d-4ade-9f39-b492285e2c9b) provides several ways you can find out what your Tenant ID (GUID) is.
+>
+
 ### Updating the Add-in
 The add-in can be updated so that the [latest version](http://billingtools.azurewebsites.net/excel/install/setup.exe) of the ClickOnce installer is installed. The installation process takes less than a minute.
 
