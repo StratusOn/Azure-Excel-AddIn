@@ -106,6 +106,7 @@
             this.EndDateEditBox = this.Factory.CreateRibbonEditBox();
             this.AggregationGranularityDropDown = this.Factory.CreateRibbonDropDown();
             this.EnrollmentNumberComboBox = this.Factory.CreateRibbonComboBox();
+            this.EaApiKeyEditBox = this.Factory.CreateRibbonEditBox();
             this.PriceSheetBillingPeriodComboBox = this.Factory.CreateRibbonComboBox();
             this.ApplicationIdComboBox = this.Factory.CreateRibbonComboBox();
             this.AppKeyComboBox = this.Factory.CreateRibbonComboBox();
@@ -118,7 +119,6 @@
             this.FillerLabel = this.Factory.CreateRibbonLabel();
             this.HelpGroup = this.Factory.CreateRibbonGroup();
             this.UpdateAddinButton = this.Factory.CreateRibbonButton();
-            this.EaApiKeyEditBox = this.Factory.CreateRibbonEditBox();
             this.AzureRibbonTab.SuspendLayout();
             this.AuthenticationRibbonGroup.SuspendLayout();
             this.BillingAPIsRibbonGroup.SuspendLayout();
@@ -225,7 +225,7 @@
             // 
             ribbonDropDownItemImpl5.Label = "Standard";
             ribbonDropDownItemImpl5.Tag = "Standard";
-            ribbonDropDownItemImpl6.Label = "Cloud Service Provider (CSP)";
+            ribbonDropDownItemImpl6.Label = "Cloud Solution Provider (CSP)";
             ribbonDropDownItemImpl6.Tag = "CSP";
             ribbonDropDownItemImpl7.Label = "Enterprise Agreement (EA)";
             ribbonDropDownItemImpl7.Tag = "EA";
@@ -307,6 +307,15 @@
             this.EnrollmentNumberComboBox.ScreenTip = "EA Enrollment Number";
             this.EnrollmentNumberComboBox.SuperTip = "The Enrollment Number for the EA for which usage data is to be collected.";
             this.EnrollmentNumberComboBox.Text = null;
+            // 
+            // EaApiKeyEditBox
+            // 
+            this.EaApiKeyEditBox.Label = "EA API Key";
+            this.EaApiKeyEditBox.Name = "EaApiKeyEditBox";
+            this.EaApiKeyEditBox.ScreenTip = "EA API Key";
+            this.EaApiKeyEditBox.SuperTip = "An EA API Key (generated in the EA portal, http://ea.azure.com) is required for g" +
+    "etting an EA Usage Report.";
+            this.EaApiKeyEditBox.Text = null;
             // 
             // PriceSheetBillingPeriodComboBox
             // 
@@ -602,14 +611,6 @@
             this.UpdateAddinButton.ShowImage = true;
             this.UpdateAddinButton.SuperTip = "Run the ClickOnce installer to update the add-in if a new version is available.";
             this.UpdateAddinButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.UpdateAddinButton_Click);
-            // 
-            // EaApiKeyEditBox
-            // 
-            this.EaApiKeyEditBox.Label = "EA API Key";
-            this.EaApiKeyEditBox.Name = "EaApiKeyEditBox";
-            this.EaApiKeyEditBox.ScreenTip = "EA API Key";
-            this.EaApiKeyEditBox.SuperTip = "An EA API Key (generated in the EA portal, http://ea.azure.com) is required for g" +
-    "etting an EA Usage Report.";
             // 
             // AzureRibbon
             // 
