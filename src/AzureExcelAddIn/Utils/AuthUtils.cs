@@ -16,12 +16,14 @@ namespace ExcelAddIn1
     internal static class AuthUtils
     {
         private const string RedirectUrn = "urn:ietf:wg:oauth:2.0:oob";
+        private const string CspRedirectUrn = "http://localhost";
         private const string AzureManagementResourceUrl = "https://management.core.windows.net/";
         private const string MoonCakeAzureManagementResourceUrl = "https://management.core.chinacloudapi.cn/";
         private const string BlackForestAzureManagementResourceUrl = "https://management.core.cloudapi.de/";
         private const string UsGovAzureManagementResourceUrl = "https://management.core.usgovcloudapi.net/";
-        private const string PartnerServiceResourceUrl = "https://api.partnercenter.microsoft.com";
+        private const string GraphResourceUrl = "https://graph.windows.net";
         private const string AzureAuthUrl = "https://login.microsoftonline.com";
+        private const string CspAzureAuthUrl = "https://login.windows.net";
         private const string ApplicationId = "1950a258-227b-4e31-a9cf-717495945fc2";
 
         public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, AzureEnvironment environment)
@@ -31,10 +33,10 @@ namespace ExcelAddIn1
 
         public static string GetAuthorizationHeader(string tenantId, bool forceReAuthentication, UsageApi usageApi, string customApplicationId, string customApplicationKey, AzureEnvironment environment)
         {
-            var authUrl = string.Format(CultureInfo.InvariantCulture, "{0}/{1}", AzureAuthUrl, tenantId);
+            var authUrl = string.Format(CultureInfo.InvariantCulture, "{0}/{1}", usageApi == UsageApi.CloudSolutionProvider ? CspAzureAuthUrl : AzureAuthUrl, tenantId);
             var context = new AuthenticationContext(authUrl);
             var resourceUrl = usageApi == UsageApi.CloudSolutionProvider
-                ? PartnerServiceResourceUrl
+                ? GraphResourceUrl
                 : GetResourceUrlByEnvironment(environment);
             var customApplicationIdSpecified = !string.IsNullOrWhiteSpace(customApplicationId);
             var applicationId = customApplicationIdSpecified ? customApplicationId : ApplicationId;
@@ -88,7 +90,7 @@ namespace ExcelAddIn1
                 result = context.AcquireToken(
                     resourceUrl,
                     applicationId,
-                    new Uri(RedirectUrn),
+                    new Uri(usageApi == UsageApi.CloudSolutionProvider ? CspRedirectUrn : RedirectUrn),
                     forceReAuthentication ? PromptBehavior.Always : PromptBehavior.Auto);
             }
 

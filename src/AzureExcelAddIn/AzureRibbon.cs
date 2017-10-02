@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -17,6 +18,12 @@ namespace ExcelAddIn1
         private const int DefaultChunkSize = 1000; // CSP allows specifying chunk size. Default is 1000. Max is 1000.
         private const int MaxContinuationLinks = 500;
         private const string AddinInstallUrl = "http://billingtools.azurewebsites.net/excel/install/setup.exe";
+        private const string UsageReportType = "Usage";
+        private const string RateCardReportType = "RateCard";
+        private const string StandardSubscriptionType = "Standard";
+        private const string CspSubscriptionType = "CSP";
+        private const string EaSubscriptionType = "EA";
+        private const string ApplicationUserAgentString = "Azure Excel Add-in";
 
         private readonly string[] HeaderCaptions = {
             "Usage Start Time (UTC)", "Usage End Time (UTC)", "Id", "Name", "Type", "subscription Id", "Meter Id", "Meter Name",
@@ -49,6 +56,7 @@ namespace ExcelAddIn1
             var yesterday = today.AddDays(-1);
             this.StartDateEditBox.Text = $"{yesterday.Year}-{yesterday.Month:0#}-{yesterday.Day:0#}";
             this.EndDateEditBox.Text = $"{today.Year}-{today.Month:0#}-{today.Day:0#}";
+            this.ChunkSizeEditBox.Text = DefaultChunkSize.ToString();
 
             this.HydrateFromPersistedData();
             this.SetControlsEnableState();
@@ -248,7 +256,7 @@ namespace ExcelAddIn1
                     }
 
                     string content = await BillingUtils.GetRestCallResultsAsync(token, continuationLink);
-                    usageAggregates = new Tuple<Lazy<UsageAggregates>, string>(new Lazy<UsageAggregates>(() => { return JsonConvert.DeserializeObject<UsageAggregates>(content); }), content);
+                    usageAggregates = new Tuple<Lazy<UsageAggregates>, string>(new Lazy<UsageAggregates>(() => JsonConvert.DeserializeObject<UsageAggregates>(content)), content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
@@ -316,16 +324,25 @@ namespace ExcelAddIn1
                 var reportEndDate = this.EndDateEditBox.Text.Trim();
                 var aggregationGranularity = (string)this.AggregationGranularityDropDown.SelectedItem.Tag;
                 var showDetails = "true"; // this.ShowDetailsCheckBox.Checked.ToString();
+                var locale = this.RateCardLocaleComboBox.Text.Trim();
+                var customerTenantId = this.CspCustomerTenantIdComboBox.Text.Trim();
+
+                var headers = new Dictionary<string, string>();
+                //headers.Add("MS-Contract-Version", "v1");
+                headers.Add("X-Locale", locale);
+                headers.Add("Accept", "application/json");
+                headers.Add("MS-PartnerCenter-Client", ApplicationUserAgentString);
+                headers.Add("MS-PartnerCenter-Application", ApplicationUserAgentString);
 
                 // Write the report line items:
                 int startColumnNumber = 1; // A
                 int startHeaderRowNumber = 1;
                 int rowNumber = 0;
                 int currentContinuationCount = 0;
-                int chunkSize = DefaultChunkSize;
+                int chunkSize = Convert.ToInt32(this.ChunkSizeEditBox.Text.Trim());
                 Excel.Worksheet currentActiveWorksheet = null;
 
-                var usageAggregates = await BillingUtils.GetUsageAggregatesCspAsync(token, subscriptionId, tenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize);
+                var usageAggregates = await BillingUtils.GetUsageAggregatesCspAsync(token, subscriptionId, customerTenantId, reportStartDate, reportEndDate, aggregationGranularity, showDetails, chunkSize, locale, headers);
 
                 do
                 {
@@ -361,8 +378,9 @@ namespace ExcelAddIn1
                     }
 
                     // A maximum of 1000 records are returned by the API. If more than 1000 records will be returned, a continuation link is provided to get the next chunk and so on.
-                    string continuationLink = usageAggregates.Item1.Value.links?.self?.uri;
-                    if (string.IsNullOrWhiteSpace(continuationLink))
+                    const string continuationTokenHeaderName = "MS-ContinuationToken";
+                    var continuationNextLink = usageAggregates.Item1.Value.links?.next;
+                    if (string.IsNullOrWhiteSpace(continuationNextLink?.uri) || continuationNextLink?.headers == null || !continuationNextLink.headers.Exists((item) => item.key == continuationTokenHeaderName))
                     {
                         break;
                     }
@@ -372,8 +390,15 @@ namespace ExcelAddIn1
                         payload.Append(",");
                     }
 
-                    string content = await BillingUtils.GetRestCallResultsAsync(token, continuationLink);
-                    usageAggregates = new Tuple<Lazy<CspUsageAggregates>, string>(new Lazy<CspUsageAggregates>(() => { return JsonConvert.DeserializeObject<CspUsageAggregates>(content); }), content);
+                    var continuationHeaders = new Dictionary<string, string>(headers)
+                    {
+                        {
+                            continuationTokenHeaderName,
+                            continuationNextLink.headers.Find((item) => item.key == continuationTokenHeaderName).value
+                        }
+                    };
+                    string content = await BillingUtils.GetRestCallResultsAsync(token, $"{BillingUtils.PartnerServiceBaseUrl}/{continuationNextLink.uri}", continuationHeaders);
+                    usageAggregates = new Tuple<Lazy<CspUsageAggregates>, string>(new Lazy<CspUsageAggregates>(() => JsonConvert.DeserializeObject<CspUsageAggregates>(content)), content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
@@ -478,7 +503,7 @@ namespace ExcelAddIn1
                     }
 
                     string content = await BillingUtils.GetRestCallResultsAsync(apiKey, continuationLink);
-                    usageAggregates = new Tuple<Lazy<EaUsageAggregates>, string>(new Lazy<EaUsageAggregates>(() => { return JsonConvert.DeserializeObject<EaUsageAggregates>(content); }), content);
+                    usageAggregates = new Tuple<Lazy<EaUsageAggregates>, string>(new Lazy<EaUsageAggregates>(() => JsonConvert.DeserializeObject<EaUsageAggregates>(content)), content);
                     currentContinuationCount++;
                 } while (currentContinuationCount < MaxContinuationLinks);
 
@@ -539,6 +564,8 @@ namespace ExcelAddIn1
 
                 Globals.ThisAddIn.Application.StatusBar = $"Getting rate card ({usageApi})...";
 
+                var headers = new Dictionary<string, string>();
+
                 var subscriptionId = this.SubscriptionIdComboBox.Text.Trim();
                 var offerDurableId = this.RateCardOfferDurableIdComboBox.Text.Trim();
                 var currency = this.RateCardCurrencyComboBox.Text.Trim();
@@ -551,7 +578,12 @@ namespace ExcelAddIn1
 
                 if (usageApi == UsageApi.CloudSolutionProvider)
                 {
-                    var rateCard = await BillingUtils.GetRateCardCspAsync(token, currency, locale, regionInfo);
+                    headers.Add("X-Locale", locale);
+                    headers.Add("Accept", "application/json");
+                    headers.Add("MS-PartnerCenter-Client", ApplicationUserAgentString);
+                    headers.Add("MS-PartnerCenter-Application", ApplicationUserAgentString);
+
+                    var rateCard = await BillingUtils.GetRateCardCspAsync(token, currency, locale, regionInfo, headers);
                     if (rateCard == null)
                     {
                         MessageBox.Show(
@@ -692,14 +724,20 @@ namespace ExcelAddIn1
             var aggregationGranularity = this.AggregationGranularityDropDown.SelectedItem.Tag;
             var enrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim();
             var billingPeriod = this.PriceSheetBillingPeriodComboBox.Text.Trim();
+            var customerTenantId = this.CspCustomerTenantIdComboBox.Text.Trim();
 
             // Write the report header:
             int rowNumber = headerRowNumber;
             ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Subscription Id:", $"{subscriptionId}" }, currentActiveWorksheet);
-            if (usageApi == UsageApi.Standard || usageApi == UsageApi.CloudSolutionProvider)
+            if (usageApi == UsageApi.Standard)
             {
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
             }
+            else if (usageApi == UsageApi.CloudSolutionProvider)
+            {
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Partner Tenant Id:", $"{tenantId}" }, currentActiveWorksheet);
+            }
+
             ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report Start Date (UTC):", $"{reportStartDate}" }, currentActiveWorksheet);
             ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Report End Date (UTC):", $"{reportEndDate}" }, currentActiveWorksheet);
             if (usageApi == UsageApi.Standard || usageApi == UsageApi.CloudSolutionProvider)
@@ -711,6 +749,10 @@ namespace ExcelAddIn1
             {
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Enrollment Number:", $"{enrollmentNumber}" }, currentActiveWorksheet);
                 ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Billing Period:", $"{billingPeriod}" }, currentActiveWorksheet);
+            }
+            if (usageApi == UsageApi.CloudSolutionProvider)
+            {
+                ExcelUtils.WriteHeaderRow($"A{rowNumber}", $"B{rowNumber++}", new[] { "Customer Tenant Id:", $"{customerTenantId}" }, currentActiveWorksheet);
             }
 
             ExcelUtils.WriteUsageLineItemHeader(startColumnNumber, rowNumber, this.GetHeaderCaptions(usageApi), currentActiveWorksheet);
@@ -966,15 +1008,25 @@ namespace ExcelAddIn1
 
         private void PersistData()
         {
-            SecurityUtils.SaveUsageReportParameters(new PersistedData()
+            var persistedData = new PersistedData()
             {
                 SubscriptionId = this.SubscriptionIdComboBox.Text.Trim(),
                 TenantId = this.TenantIdComboBox.Text.Trim(),
                 EnrollmentNumber = this.EnrollmentNumberComboBox.Text.Trim(),
                 EaApiKey = this.EaApiKeyEditBox.Text.Trim(),
                 ApplicationId = this.ApplicationIdComboBox.Text.Trim(),
-                ApplicationKey = this.AppKeyComboBox.Text.Trim()
-            });
+                ApplicationKey = this.AppKeyComboBox.Text.Trim(),
+                CustomerTenantId = this.CspCustomerTenantIdComboBox.Text.Trim()
+            };
+
+            persistedData.SubscriptionIds = new List<string>(this.SubscriptionIdComboBox.Items.Select(item => item.Label));
+            persistedData.TenantIds = new List<string>(this.TenantIdComboBox.Items.Select(item => item.Label));
+            persistedData.EnrollmentNumbers = new List<string>(this.EnrollmentNumberComboBox.Items.Select(item => item.Label));
+            persistedData.ApplicationIds = new List<string>(this.ApplicationIdComboBox.Items.Select(item => item.Label));
+            persistedData.ApplicationKeys = new List<string>(this.AppKeyComboBox.Items.Select(item => item.Label));
+            persistedData.CustomerTenantIds = new List<string>(this.CspCustomerTenantIdComboBox.Items.Select(item => item.Label));
+
+            SecurityUtils.SaveUsageReportParameters(persistedData);
         }
 
         private void AddDataToCombos()
@@ -983,37 +1035,44 @@ namespace ExcelAddIn1
 
             var subscriptionIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
             subscriptionIdRibbonDropDownItem.Label = this.SubscriptionIdComboBox.Text.Trim();
-            if (this.SubscriptionIdComboBox.Items.All(item => string.Compare(item.Label, subscriptionIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            if (!string.IsNullOrWhiteSpace(subscriptionIdRibbonDropDownItem.Label) && this.SubscriptionIdComboBox.Items.All(item => string.Compare(item.Label, subscriptionIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
             {
                 this.SubscriptionIdComboBox.Items.Add(subscriptionIdRibbonDropDownItem);
             }
 
             var tenantIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
-            tenantIdRibbonDropDownItem.Label = this.TenantIdComboBox.Text;
-            if (this.TenantIdComboBox.Items.All(item => string.Compare(item.Label, tenantIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            tenantIdRibbonDropDownItem.Label = this.TenantIdComboBox.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(tenantIdRibbonDropDownItem.Label) && this.TenantIdComboBox.Items.All(item => string.Compare(item.Label, tenantIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
             {
                 this.TenantIdComboBox.Items.Add(tenantIdRibbonDropDownItem);
             }
 
             var applicationIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
-            applicationIdRibbonDropDownItem.Label = this.ApplicationIdComboBox.Text;
-            if (this.ApplicationIdComboBox.Items.All(item => string.Compare(item.Label, applicationIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            applicationIdRibbonDropDownItem.Label = this.ApplicationIdComboBox.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(applicationIdRibbonDropDownItem.Label) && this.ApplicationIdComboBox.Items.All(item => string.Compare(item.Label, applicationIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
             {
                 this.ApplicationIdComboBox.Items.Add(applicationIdRibbonDropDownItem);
             }
 
             var appKeyRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
-            appKeyRibbonDropDownItem.Label = this.AppKeyComboBox.Text;
-            if (this.AppKeyComboBox.Items.All(item => string.Compare(item.Label, appKeyRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            appKeyRibbonDropDownItem.Label = this.AppKeyComboBox.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(appKeyRibbonDropDownItem.Label) && this.AppKeyComboBox.Items.All(item => string.Compare(item.Label, appKeyRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
             {
                 this.AppKeyComboBox.Items.Add(appKeyRibbonDropDownItem);
             }
 
             var enrollmentNumberRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
-            enrollmentNumberRibbonDropDownItem.Label = this.EnrollmentNumberComboBox.Text;
-            if (this.EnrollmentNumberComboBox.Items.All(item => string.Compare(item.Label, enrollmentNumberRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            enrollmentNumberRibbonDropDownItem.Label = this.EnrollmentNumberComboBox.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(enrollmentNumberRibbonDropDownItem.Label) && this.EnrollmentNumberComboBox.Items.All(item => string.Compare(item.Label, enrollmentNumberRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
             {
                 this.EnrollmentNumberComboBox.Items.Add(enrollmentNumberRibbonDropDownItem);
+            }
+
+            var customerTenantIdRibbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+            customerTenantIdRibbonDropDownItem.Label = this.CspCustomerTenantIdComboBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(customerTenantIdRibbonDropDownItem.Label) && this.CspCustomerTenantIdComboBox.Items.All(item => string.Compare(item.Label, customerTenantIdRibbonDropDownItem.Label, StringComparison.CurrentCultureIgnoreCase) != 0))
+            {
+                this.CspCustomerTenantIdComboBox.Items.Add(customerTenantIdRibbonDropDownItem);
             }
         }
 
@@ -1028,7 +1087,22 @@ namespace ExcelAddIn1
                     this.SubscriptionIdComboBox.Text = persistedData.SubscriptionId;
                     var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
                     ribbonDropDownItem.Label = persistedData.SubscriptionId;
-                    this.SubscriptionIdComboBox.Items.Add(ribbonDropDownItem);
+                    if (persistedData.SubscriptionIds == null || persistedData.SubscriptionIds.Count == 0)
+                    {
+                        this.SubscriptionIdComboBox.Items.Add(ribbonDropDownItem);
+                    }
+                    else
+                    {
+                        foreach (var subscriptionId in persistedData.SubscriptionIds)
+                        {
+                            if (!string.IsNullOrWhiteSpace(subscriptionId))
+                            {
+                                var item = ribbonFactory.CreateRibbonDropDownItem();
+                                item.Label = subscriptionId;
+                                this.SubscriptionIdComboBox.Items.Add(item);
+                            }
+                        }
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(persistedData.TenantId))
@@ -1036,7 +1110,22 @@ namespace ExcelAddIn1
                     this.TenantIdComboBox.Text = persistedData.TenantId;
                     var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
                     ribbonDropDownItem.Label = persistedData.TenantId;
-                    this.TenantIdComboBox.Items.Add(ribbonDropDownItem);
+                    if (persistedData.TenantIds == null || persistedData.TenantIds.Count == 0)
+                    {
+                        this.TenantIdComboBox.Items.Add(ribbonDropDownItem);
+                    }
+                    else
+                    {
+                        foreach (var tenantId in persistedData.TenantIds)
+                        {
+                            if (!string.IsNullOrWhiteSpace(tenantId))
+                            {
+                                var item = ribbonFactory.CreateRibbonDropDownItem();
+                                item.Label = tenantId;
+                                this.TenantIdComboBox.Items.Add(item);
+                            }
+                        }
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(persistedData.EnrollmentNumber))
@@ -1044,7 +1133,22 @@ namespace ExcelAddIn1
                     this.EnrollmentNumberComboBox.Text = persistedData.EnrollmentNumber;
                     var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
                     ribbonDropDownItem.Label = persistedData.EnrollmentNumber;
-                    this.EnrollmentNumberComboBox.Items.Add(ribbonDropDownItem);
+                    if (persistedData.EnrollmentNumbers == null || persistedData.EnrollmentNumbers.Count == 0)
+                    {
+                        this.EnrollmentNumberComboBox.Items.Add(ribbonDropDownItem);
+                    }
+                    else
+                    {
+                        foreach (var enrollmentNumber in persistedData.EnrollmentNumbers)
+                        {
+                            if (!string.IsNullOrWhiteSpace(enrollmentNumber))
+                            {
+                                var item = ribbonFactory.CreateRibbonDropDownItem();
+                                item.Label = enrollmentNumber;
+                                this.EnrollmentNumberComboBox.Items.Add(item);
+                            }
+                        }
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(persistedData.EaApiKey))
@@ -1057,7 +1161,22 @@ namespace ExcelAddIn1
                     this.ApplicationIdComboBox.Text = persistedData.ApplicationId;
                     var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
                     ribbonDropDownItem.Label = persistedData.ApplicationId;
-                    this.ApplicationIdComboBox.Items.Add(ribbonDropDownItem);
+                    if (persistedData.ApplicationIds == null || persistedData.ApplicationIds.Count == 0)
+                    {
+                        this.ApplicationIdComboBox.Items.Add(ribbonDropDownItem);
+                    }
+                    else
+                    {
+                        foreach (var applicationId in persistedData.ApplicationIds)
+                        {
+                            if (!string.IsNullOrWhiteSpace(applicationId))
+                            {
+                                var item = ribbonFactory.CreateRibbonDropDownItem();
+                                item.Label = applicationId;
+                                this.ApplicationIdComboBox.Items.Add(item);
+                            }
+                        }
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(persistedData.ApplicationKey))
@@ -1065,7 +1184,45 @@ namespace ExcelAddIn1
                     this.AppKeyComboBox.Text = persistedData.ApplicationKey;
                     var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
                     ribbonDropDownItem.Label = persistedData.ApplicationKey;
-                    this.AppKeyComboBox.Items.Add(ribbonDropDownItem);
+                    if (persistedData.ApplicationKeys == null || persistedData.ApplicationKeys.Count == 0)
+                    {
+                        this.AppKeyComboBox.Items.Add(ribbonDropDownItem);
+                    }
+                    else
+                    {
+                        foreach (var applicationKey in persistedData.ApplicationKeys)
+                        {
+                            if (!string.IsNullOrWhiteSpace(applicationKey))
+                            {
+                                var item = ribbonFactory.CreateRibbonDropDownItem();
+                                item.Label = applicationKey;
+                                this.AppKeyComboBox.Items.Add(item);
+                            }
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(persistedData.CustomerTenantId))
+                {
+                    this.CspCustomerTenantIdComboBox.Text = persistedData.CustomerTenantId;
+                    var ribbonDropDownItem = ribbonFactory.CreateRibbonDropDownItem();
+                    ribbonDropDownItem.Label = persistedData.CustomerTenantId;
+                    if (persistedData.CustomerTenantIds == null || persistedData.CustomerTenantIds.Count == 0)
+                    {
+                        this.CspCustomerTenantIdComboBox.Items.Add(ribbonDropDownItem);
+                    }
+                    else
+                    {
+                        foreach (var customerTenantId in persistedData.CustomerTenantIds)
+                        {
+                            if (!string.IsNullOrWhiteSpace(customerTenantId))
+                            {
+                                var item = ribbonFactory.CreateRibbonDropDownItem();
+                                item.Label = customerTenantId;
+                                this.CspCustomerTenantIdComboBox.Items.Add(item);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1074,15 +1231,15 @@ namespace ExcelAddIn1
         {
             string reportType = this.ReportTypeDropDown.SelectedItem.Tag as string;
             string subscriptionType = this.SubscriptionTypeDropDown.SelectedItem.Tag as string;
-            bool isUsageReport = reportType == "Usage";
-            bool isRateCard = reportType == "RateCard";
-            bool isStandard = subscriptionType == "Standard";
-            bool isCsp = subscriptionType == "CSP";
-            bool isEa = subscriptionType == "EA";
+            bool isUsageReport = reportType == UsageReportType;
+            bool isRateCard = reportType == RateCardReportType;
+            bool isStandard = subscriptionType == StandardSubscriptionType;
+            bool isCsp = subscriptionType == CspSubscriptionType;
+            bool isEa = subscriptionType == EaSubscriptionType;
 
             this.RateCardOfferDurableIdComboBox.Enabled = isRateCard && isStandard;
             this.RateCardCurrencyComboBox.Enabled = isRateCard && (isStandard || isCsp);
-            this.RateCardLocaleComboBox.Enabled = isRateCard && (isStandard || isCsp);
+            this.RateCardLocaleComboBox.Enabled = (isRateCard && (isStandard || isCsp)) || isCsp;
             this.RateCardRegionInfoComboBox.Enabled = isRateCard && (isStandard || isCsp);
             this.PriceSheetBillingPeriodComboBox.Enabled = isEa;
             this.EaApiKeyEditBox.Enabled = isEa;
@@ -1094,6 +1251,8 @@ namespace ExcelAddIn1
             this.EndDateEditBox.Enabled = isUsageReport;
             this.SubscriptionIdComboBox.Enabled = isStandard || isCsp;
             this.TenantIdComboBox.Enabled = true;
+            this.CspCustomerTenantIdComboBox.Enabled = isCsp;
+            this.ChunkSizeEditBox.Enabled = isCsp && isUsageReport;
         }
 
         private bool ValidateUsageReportInput(UsageApi usageApi)
@@ -1162,6 +1321,44 @@ namespace ExcelAddIn1
             {
                 MessageBox.Show($"ERROR: Region must be specified (e.g.: US).", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
+            }
+
+            var reportType = this.ReportTypeDropDown.SelectedItem.Tag as string;
+            if (string.IsNullOrWhiteSpace(this.CspCustomerTenantIdComboBox.Text) && usageApi == UsageApi.CloudSolutionProvider && reportType == UsageReportType)
+            {
+                MessageBox.Show($"ERROR: Customer Tenant Id must be specified.", "Azure Excel Add-in", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (reportType == UsageReportType && usageApi == UsageApi.CloudSolutionProvider)
+            {
+                if (string.IsNullOrWhiteSpace(this.ChunkSizeEditBox.Text))
+                {
+                    MessageBox.Show($"ERROR: Chunk size must be specified (between 1 and 1000, inclusive).", "Azure Excel Add-in",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+                else
+                {
+                    int chunkSize = 0;
+                    if (!Int32.TryParse(this.ChunkSizeEditBox.Text.Trim(), out chunkSize))
+                    {
+                        MessageBox.Show($"ERROR: Chunk size must be an integer between 1 and 1000, inclusive.",
+                            "Azure Excel Add-in",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                    else
+                    {
+                        if (chunkSize < 1 || chunkSize > 1000)
+                        {
+                            MessageBox.Show($"ERROR: Chunk size must be between 1 and 1000, inclusive.",
+                                "Azure Excel Add-in",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return false;
+                        }
+                    }
+                }
             }
 
             this.PersistData();

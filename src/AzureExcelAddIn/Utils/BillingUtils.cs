@@ -10,22 +10,25 @@ namespace ExcelAddIn1
 {
     internal class BillingUtils
     {
+        private const string PartnerServiceResourceUrl = "https://api.partnercenter.microsoft.com";
+        private const string PartnerServiceApiVersion = "v1";
+
+        public static string PartnerServiceBaseUrl => $"{PartnerServiceResourceUrl}/{PartnerServiceApiVersion}";
+
         public static async Task<Tuple<Lazy<RateCard>, string>> GetRateCardStandardAsync(string authorizationToken, string subscriptionId, string offerDurableId, string currency, string locale, string regionInfo, string apiVersion = "2015-06-01-preview")
         {
             string rateCardUrl =
             $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/RateCard?api-version={apiVersion}&$filter=OfferDurableId eq '{offerDurableId}' and Currency eq '{currency}' and Locale eq '{locale}' and RegionInfo eq '{regionInfo}'";
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
-            return new Tuple<Lazy<RateCard>, string>(new Lazy<RateCard>(() => { return JsonConvert.DeserializeObject<RateCard>(content); }), content);
+            return new Tuple<Lazy<RateCard>, string>(new Lazy<RateCard>(() => JsonConvert.DeserializeObject<RateCard>(content)), content);
         }
 
-        public static async Task<Tuple<Lazy<CspRateCard>, string>> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo)
+        public static async Task<Tuple<Lazy<CspRateCard>, string>> GetRateCardCspAsync(string authorizationToken, string currency, string locale, string regionInfo, Dictionary<string, string> headers)
         {
             string rateCardUrl =
-                $"https://api.partnercenter.microsoft.com/v1/ratecards/azure&currency={currency}&region={regionInfo}";
-            var headers = new Dictionary<string, string>();
-            headers.Add("X-Locale", locale);
+                $"{PartnerServiceBaseUrl}/ratecards/azure?currency={currency}&region={regionInfo}";
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl, headers);
-            return new Tuple<Lazy<CspRateCard>, string>(new Lazy<CspRateCard>(() => { return JsonConvert.DeserializeObject<CspRateCard>(content); }), content);
+            return new Tuple<Lazy<CspRateCard>, string>(new Lazy<CspRateCard>(() => JsonConvert.DeserializeObject<CspRateCard>(content)), content);
         }
 
         public static async Task<Tuple<Lazy<PriceSheet>, string>> GetPriceSheetAsync(string authorizationToken, string enrollmentNumber, string billingPeriod)
@@ -34,12 +37,9 @@ namespace ExcelAddIn1
                 $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/pricesheet" :
                 $"https://consumption.azure.com/v2/enrollments/{enrollmentNumber}/billingPeriods/{billingPeriod}/pricesheet";
             string content = await GetRestCallResultsAsync(authorizationToken, rateCardUrl);
-            return new Tuple<Lazy<PriceSheet>, string>(new Lazy<PriceSheet>(() =>
+            return new Tuple<Lazy<PriceSheet>, string>(new Lazy<PriceSheet>(() => new PriceSheet()
             {
-                return new PriceSheet()
-                {
-                    PriceSheetMeters = JsonConvert.DeserializeObject<PriceSheetMeter[]>(content)
-                };
+                PriceSheetMeters = JsonConvert.DeserializeObject<PriceSheetMeter[]>(content)
             }), content);
         }
 
@@ -48,15 +48,15 @@ namespace ExcelAddIn1
             string usageAggregatesUrl =
                         $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/UsageAggregates?api-version=2015-06-01-preview&reportedStartTime={CreateStartTime(reportStartDate)}&reportedEndTime={CreateEndTime(reportEndDate)}&aggregationGranularity={aggregationGranularity}&showDetails={showDetails}";
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return new Tuple<Lazy<UsageAggregates>, string>(new Lazy<UsageAggregates>(() => { return JsonConvert.DeserializeObject<UsageAggregates>(content); }), content);
+            return new Tuple<Lazy<UsageAggregates>, string>(new Lazy<UsageAggregates>(() => JsonConvert.DeserializeObject<UsageAggregates>(content)), content);
         }
 
-        public static async Task<Tuple<Lazy<CspUsageAggregates>, string>> GetUsageAggregatesCspAsync(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize)
+        public static async Task<Tuple<Lazy<CspUsageAggregates>, string>> GetUsageAggregatesCspAsync(string authorizationToken, string subscriptionId, string customerTenantId, string reportStartDate, string reportEndDate, string aggregationGranularity, string showDetails, int chunkSize, string locale, Dictionary<string, string> headers)
         {
             string usageAggregatesUrl =
-                $"https://api.partnercenter.microsoft.com/v1/customers/{customerTenantId}/subscriptions/{subscriptionId}/utilizations/azure?start_time={reportStartDate}&end_time={reportEndDate}&size={chunkSize}";
-            string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return new Tuple<Lazy<CspUsageAggregates>, string>(new Lazy<CspUsageAggregates>(() => { return JsonConvert.DeserializeObject<CspUsageAggregates>(content); }), content);
+                $"{PartnerServiceBaseUrl}/customers/{customerTenantId}/subscriptions/{subscriptionId}/utilizations/azure?start_time={reportStartDate}&end_time={reportEndDate}&size={chunkSize}";
+            string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl, headers);
+            return new Tuple<Lazy<CspUsageAggregates>, string>(new Lazy<CspUsageAggregates>(() => JsonConvert.DeserializeObject<CspUsageAggregates>(content)), content);
         }
 
         public static async Task<Tuple<Lazy<EaUsageAggregates>, string>> GetUsageAggregatesEaAsync(string authorizationToken, string enrollmentNumber, string reportStartDate, string reportEndDate, string billingPeriod)
@@ -76,7 +76,7 @@ namespace ExcelAddIn1
             }
 
             string content = await GetRestCallResultsAsync(authorizationToken, usageAggregatesUrl);
-            return new Tuple<Lazy<EaUsageAggregates>, string>(new Lazy<EaUsageAggregates>(() => { return JsonConvert.DeserializeObject<EaUsageAggregates>(content); }), content);
+            return new Tuple<Lazy<EaUsageAggregates>, string>(new Lazy<EaUsageAggregates>(() => JsonConvert.DeserializeObject<EaUsageAggregates>(content)), content);
         }
 
         public static async Task<string> GetRestCallResultsAsync(string authorizationToken, string url, IDictionary<string, string> headers = null)
@@ -210,23 +210,23 @@ namespace ExcelAddIn1
 
             if (lineItem.InstanceData != null)
             {
-                if (lineItem.InstanceData.MicrosoftResources.tags != null)
+                if (lineItem.InstanceData.tags != null)
                 {
-                    fields.Add(string.Join(";", lineItem.InstanceData.MicrosoftResources.tags.Select(x => x.Key + "=" + x.Value)));
+                    fields.Add(string.Join(";", lineItem.InstanceData.tags.Select(x => x.Key + "=" + x.Value)));
                 }
                 else
                 {
                     fields.Add(string.Empty);
                 }
 
-                fields.Add(lineItem.InstanceData.MicrosoftResources.resourceUri);
-                fields.Add(lineItem.InstanceData.MicrosoftResources.location);
-                fields.Add(lineItem.InstanceData.MicrosoftResources.orderNumber);
-                fields.Add(lineItem.InstanceData.MicrosoftResources.partNumber);
+                fields.Add(lineItem.InstanceData.resourceUri);
+                fields.Add(lineItem.InstanceData.location);
+                fields.Add(lineItem.InstanceData.orderNumber);
+                fields.Add(lineItem.InstanceData.partNumber);
 
-                if (lineItem.InstanceData.MicrosoftResources.additionalInfo != null)
+                if (lineItem.InstanceData.additionalInfo != null)
                 {
-                    fields.Add(string.Join(";", lineItem.InstanceData.MicrosoftResources.additionalInfo.Select(x => x.Key + "=" + x.Value)));
+                    fields.Add(string.Join(";", lineItem.InstanceData.additionalInfo.Select(x => x.Key + "=" + x.Value)));
                 }
                 else
                 {

@@ -90,6 +90,7 @@
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl54 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl55 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl56 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl57 = this.Factory.CreateRibbonDropDownItem();
             this.AzureRibbonTab = this.Factory.CreateRibbonTab();
             this.AuthenticationRibbonGroup = this.Factory.CreateRibbonGroup();
             this.GetTokenButton = this.Factory.CreateRibbonButton();
@@ -116,6 +117,8 @@
             this.RateCardRegionInfoComboBox = this.Factory.CreateRibbonComboBox();
             this.AzureEnvironmentDropDown = this.Factory.CreateRibbonDropDown();
             this.IncludeRawPayloadCheckBox = this.Factory.CreateRibbonCheckBox();
+            this.CspCustomerTenantIdComboBox = this.Factory.CreateRibbonComboBox();
+            this.ChunkSizeEditBox = this.Factory.CreateRibbonEditBox();
             this.FillerLabel = this.Factory.CreateRibbonLabel();
             this.HelpGroup = this.Factory.CreateRibbonGroup();
             this.UpdateAddinButton = this.Factory.CreateRibbonButton();
@@ -193,6 +196,8 @@
             this.BillingAPIsRibbonGroup.Items.Add(this.RateCardRegionInfoComboBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.AzureEnvironmentDropDown);
             this.BillingAPIsRibbonGroup.Items.Add(this.IncludeRawPayloadCheckBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.CspCustomerTenantIdComboBox);
+            this.BillingAPIsRibbonGroup.Items.Add(this.ChunkSizeEditBox);
             this.BillingAPIsRibbonGroup.Items.Add(this.FillerLabel);
             this.BillingAPIsRibbonGroup.Label = "Azure Usage && RateCard APIs";
             this.BillingAPIsRibbonGroup.Name = "BillingAPIsRibbonGroup";
@@ -245,8 +250,8 @@
             this.TenantIdComboBox.Label = "Tenant Id";
             this.TenantIdComboBox.Name = "TenantIdComboBox";
             this.TenantIdComboBox.ScreenTip = "Tenant Id";
-            this.TenantIdComboBox.SuperTip = "The user\'s tenant id (standard and CSP) or the customer tenant id (EA), in the fo" +
-    "rm xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.";
+            this.TenantIdComboBox.SuperTip = "The user\'s tenant id (standard), Partner Tenant Id (CSP), or the customer tenant " +
+    "id (EA), in the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.";
             this.TenantIdComboBox.Text = null;
             // 
             // SubscriptionIdComboBox
@@ -591,6 +596,25 @@
             this.IncludeRawPayloadCheckBox.SuperTip = "Include the raw JSON payload in a separate worksheet. This is useful for troubles" +
     "hooting data integrity or corrupted data issues.";
             // 
+            // CspCustomerTenantIdComboBox
+            // 
+            this.CspCustomerTenantIdComboBox.Items.Add(ribbonDropDownItemImpl57);
+            this.CspCustomerTenantIdComboBox.Label = "Customer Tenant Id";
+            this.CspCustomerTenantIdComboBox.Name = "CspCustomerTenantIdComboBox";
+            this.CspCustomerTenantIdComboBox.ScreenTip = "Customer Tenant Id";
+            this.CspCustomerTenantIdComboBox.SuperTip = "The CSP customer tenant id in the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx. This" +
+    " is different from the partner tenant id entered in the \"Tenant Id\" box.";
+            this.CspCustomerTenantIdComboBox.Text = null;
+            // 
+            // ChunkSizeEditBox
+            // 
+            this.ChunkSizeEditBox.Label = "Chunk Size";
+            this.ChunkSizeEditBox.Name = "ChunkSizeEditBox";
+            this.ChunkSizeEditBox.ScreenTip = "CSP Usage Results Chunk Size";
+            this.ChunkSizeEditBox.SuperTip = "The maximum number of results to return in each CSP usage API call. The default i" +
+    "s 1000. The maximum allowed is 1000. The minimum allowed is 1.";
+            this.ChunkSizeEditBox.Text = null;
+            // 
             // FillerLabel
             // 
             this.FillerLabel.Label = " ";
@@ -660,6 +684,8 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown AzureEnvironmentDropDown;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox IncludeRawPayloadCheckBox;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox EaApiKeyEditBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox CspCustomerTenantIdComboBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonEditBox ChunkSizeEditBox;
     }
 
     partial class ThisRibbonCollection

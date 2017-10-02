@@ -14,14 +14,21 @@ namespace ExcelAddIn1
 
     public class Links
     {
-        public Self self { get; set; }
+        public LinkItem self { get; set; }
+        public LinkItem next { get; set; }
     }
 
-    public class Self
+    public class LinkItem
     {
         public string uri { get; set; }
         public string method { get; set; }
-        public object[] headers { get; set; }
+        public List<HeaderItem> headers { get; set; }
+    }
+
+    public class HeaderItem
+    {
+        public string key { get; set; }
+        public string value { get; set; }
     }
 
     public class Attributes
@@ -38,8 +45,7 @@ namespace ExcelAddIn1
         public string unit { get; set; }
         public InfoFields infoFields { get; set; }
         [JsonProperty("instanceData")]
-        public string instanceDataRaw { get; set; }
-        public InstanceData InstanceData => JsonConvert.DeserializeObject<InstanceData>(instanceDataRaw.Replace("\\\"", ""));
+        public CspInstanceData InstanceData { get; set; }
         public Attributes attributes { get; set; }
     }
 
